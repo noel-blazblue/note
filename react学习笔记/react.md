@@ -226,6 +226,8 @@ class AsyncApp extends Component {
 
 **mergeProps(stateProps, dispatchProps, ownProps)：**
 
+可以在其中对 mapStateToProps， mapDispatchToProps的结果进一步处理
+
 如果指定了这个参数，`mapStateToProps()` 与 `mapDispatchToProps()` 的执行结果和组件自身的 `props` 将传入到这个回调函数中。该回调函数返回的对象将作为 props 传递到被包装的组件中。
 
 默认情况下返回 `Object.assign({}, ownProps, stateProps, dispatchProps)` 的结果。
@@ -233,6 +235,8 @@ class AsyncApp extends Component {
 
 
 **options：**
+
+一些配置项，例如 pure.当设置为true时，会避免不必要的渲染
 
 pure = true 表示Connect容器组件将在shouldComponentUpdate中对store的state和ownProps进行浅对比，判断是否发生变化，优化性能。为false则不对比。
 
