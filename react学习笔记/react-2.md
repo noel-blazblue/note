@@ -180,7 +180,7 @@ React 会根据任务的优先级去分配各自的 `expirationTime`，在过期
 
 **常量：**根据不同优先级得出的一个数值
 
-```
+```javascript
 var ImmediatePriority = 1;
 var UserBlockingPriority = 2;
 var NormalPriority = 3;
@@ -190,7 +190,7 @@ var IdlePriority = 5;
 
 **数值：**
 
-```
+```javascript
 var maxSigned31BitInt = 1073741823;
 
 // Times out immediately
@@ -217,7 +217,7 @@ var IDLE_PRIORITY = maxSigned31BitInt;
 
 **requestAnimationFrame ：** 回调方法会在每次重绘前执行
 
-```
+```javascript
 rAFID = requestAnimationFrame(function(timestamp) {
   // cancel the setTimeout
   localClearTimeout(rAFTimeoutID);
@@ -238,7 +238,7 @@ rAFTimeoutID = setTimeout(function() {
 
 > 在一帧当中，浏览器可能会响应用户的交互事件、执行 JS、进行渲染的一系列计算绘制。假设当前我们的浏览器支持 1 秒 60 帧，那么也就是说一帧的时间为 16.6 毫秒。如果以上这些操作超过了 16.6 毫秒，那么就会导致渲染没有完成并出现掉帧的情况，继而影响用户体验；如果以上这些操作没有耗时 16.6 毫秒的话，那么我们就认为当下存在空闲时间让我们可以去执行任务。
 
-```
+```javascript
 //计算出当前帧是否还有剩余时间让我们使用。
 let frameDeadline = 0
 let previousFrameTime = 33
