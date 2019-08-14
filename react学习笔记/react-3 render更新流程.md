@@ -43,7 +43,7 @@ fiber是个链表结构，记录了很多上下文的信息，其中就有对节
 
 ![img](https://user-gold-cdn.xitu.io/2019/7/21/16c14ea212e58566?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
 
-```
+```javascript
 {
   ...
   // 浏览器环境下指 DOM 节点
