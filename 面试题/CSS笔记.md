@@ -74,28 +74,59 @@ body,form,img 有默认的padding值
 
 !important -> 行内样式 -> #id -> .class -> 元素和伪元素 -> * -> 继承 -> 默认 
 
+- `!important`
+- 内联样式（1000）
+- ID选择器（0100）
+- 类选择器/属性选择器/伪类选择器（0010）
+- 元素选择器/关系选择器/伪元素选择器（0001）
+- 通配符选择器（0000）
+
 
 
 ## BFC
 
-BFC 就是 块级格式上下文，它是一个独立的渲染区域，让处于 BFC 内部的元素和外部的元素相互隔离，使内外元素的定位不会相互影响。
+> BFC 就是 块级格式上下文，它是一个独立的渲染区域，让处于 BFC 内部的元素和外部的元素相互隔离，使内外元素的定位不会相互影响。
+>
 
-一定的 CSS 声明可以生成 BFC，浏览器对生成的 BFC 有一系列的渲染规则，利用这些渲染规则可以达到一定的布局效果。
+CSS 声明可以生成 BFC，浏览器对生成的 BFC 有一系列的渲染规则，利用这些渲染规则可以达到一定的布局效果。
 
-- 为什么需要 BFC 呢？
 
-1. 它可以防止 margin 元素重叠（div 中包含 ul，而 div 与 ul 之间的垂直距离，取决于 div、ul、li 三者之间的最大外边距，这时候给 ul 一个 display:inline-block 即可解决这个问题）
-2. 清除内部浮动（div 中包含 ul，而 ul 采用 float:left，那么 div 将变成一长条，这时候给 div 加上规则使其变成 BFC 即可）
 
-- 如何产生 BFC？
+- **BFC可以解决的问题**
+  - 垂直外边距重叠问题
+  - 去除浮动
+  - 自适用两列布局（`float` + `overflow`）
 
-1. display: inline-block
-2. position: absolute/fixed
 
-- 工作中一般可能不会顾及这个：
 
-1. float 很少使用了，尽可能使用 flex
-2. css reset 一般会清除掉一些问题，减少 BFC 的使用。
+- #### 触发BFC的条件
+
+  - 根元素或其它包含它的元素
+
+  - 浮动元素 (元素的 `float` 不是 `none`)
+
+  - 绝对定位元素 (元素具有 `position` 为 `absolute` 或 `fixed`)
+
+  - 内联块 (元素具有 `display: inline-block`)
+
+  - 表格单元格 (元素具有 `display: table-cell`，HTML表格单元格默认属性)
+
+  - 表格标题 (元素具有 `display: table-caption`, HTML表格标题默认属性)
+
+  - 具有`overflow` 且值不是 `visible` 的块元素
+
+  - 弹性盒（`flex`或`inline-flex`）
+
+  - `display: flow-root`
+
+  - `column-span: all`
+
+    
+
+- **工作中一般可能不会顾及这个：**
+
+  - float 很少使用了，尽可能使用 flex
+  - css reset 一般会清除掉一些问题，减少 BFC 的使用。
 
 
 
