@@ -39,7 +39,7 @@ React 16之后有三个生命周期被废弃(但并未删除)
 
 - **constructor**: 构造函数，最先被执行,我们通常在构造函数里初始化state对象或者给自定义方法绑定this
 
-- **getDerivedStateFromProps**: `static getDerivedStateFromProps(nextProps, prevState)`,这是个静态方法,当我们接收到新的属性想去修改我们state，可以使用getDerivedStateFromProps
+- **getDerivedStateFromProps**: `static getDerivedStateFromProps(nextProps, prevState)`,这是个静态方法,当我们接收到新的属性想去修改我们state，可以使用
 
 - **render**: render函数是纯函数，只返回需要渲染的东西，不应该包含其它的业务逻辑,可以返回原生的DOM、React组件、Fragment、Portals、字符串和数字、Boolean和null等内容
 
