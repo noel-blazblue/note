@@ -234,3 +234,10 @@ margin：auto
 
 - **区别：**伪类的操作对象是文档树中已有的元素，而伪元素则创建了一个文档树外的元素。因此，伪类与伪元素的区别在于：**有没有创建一个文档树之外的元素。**
 
+
+
+## 层叠上下文
+
+![img](https://user-gold-cdn.xitu.io/2019/8/30/16ce245b90085292?imageslim)
+
+position 和 transform 会自动创建层叠上下文，为z-index: auto
