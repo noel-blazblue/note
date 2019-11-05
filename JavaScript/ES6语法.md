@@ -1739,6 +1739,12 @@ arr2[Symbol.isConcatSpreadable] = false;
 
 ## Promise
 
+
+
+ 当一个 promise 被 resolve 时，会遍历之前通过 then 给这个 promise 注册的所有回调，将它们依次放入微任务队列中 
+
+
+
 ### Promise状态
 
 Promise 有三种状态，pedding, resolve, reject

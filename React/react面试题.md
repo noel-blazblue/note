@@ -100,3 +100,32 @@ React组件间通信方式:
 - React.memo并不能完全替代shouldComponentUpdate（因为拿不到 state change，只针对 props change）
 
 
+
+## 高阶组件(HOC)
+
+ 高阶组件(Higher Order Componennt)本身其实不是组件，而是一个函数，这个函数接收一个**元组件**作为参数，然后返回一个新的**增强组件**，高阶组件的出现本身也是为了逻辑复用，举个例子： 
+
+```js
+  function withLoginAuth(WrappedComponent) {
+      return class extends React.Component {
+          constructor(props) {
+              super(props);
+              this.state = {
+                isLogin: false
+              };
+          }
+          async componentDidMount() {
+              const isLogin = await getLoginStatus();
+              this.setState({ isLogin });
+          }
+          render() {
+            if (this.state.isLogin) {
+                return <WrappedComponent {...this.props} />;
+            }
+            return (<div>您还未登录...</div>);
+          }
+      }
+  }
+
+```
+
