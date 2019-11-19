@@ -321,7 +321,7 @@ Fiber 包含的属性可以划分为 5 个部分:
 
 
 
-###  Diff 
+###  Diff （Reconcilation）
 
  `beginWork` 是如何对 Fiber 进行比对的: 
 
