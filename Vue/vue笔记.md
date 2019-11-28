@@ -267,7 +267,19 @@ abstract模式是使用一个不依赖于浏览器的浏览历史虚拟管理后
 
 keep-alive是 Vue 内置的一个组件，可以使被包含的组件保留状态，或避免重新渲染。
 
- 在vue 2.1.0 版本之后，keep-alive新加入了两个属性: include(包含的组件缓存) 与 exclude(排除的组件不缓存，优先级大于include) 。
+> <keep-alive> 包裹动态组件时，会缓存不活动的组件实例，而不是销毁它们。和 <transition> 相似，<keep-alive> 是一个抽象组件：它自身不会渲染一个 DOM 元素，也不会出现在父组件链中。 当组件在 <keep-alive> 内被切换，它的 activated 和 deactivated 这两个生命周期钩子函数将会被对应执行。 在 2.2.0 及其更高版本中，activated 和 deactivated 将会在 <keep-alive> 树内的所有嵌套组件中触发。 主要用于保留组件状态或避免重新渲染。
+
+exclude和include属性
+
+#### keep-alive`的生命周期
+
+- 初次进入时： 
+  1. `created` > `mounted` > `activated`
+  2. 退出后触发 `deactivated`
+- 再次进入： 
+  1. 只会触发 `activated`
+- 事件挂载的方法等，只执行一次的放在 `mounted` 中；组件每次进去执行的方法放在 `activated` 中
+
 
 
 

@@ -10,6 +10,67 @@
 
 
 
+在 React 中 PureComponet 的源码为
+
+```js
+if (this._compositeType === CompositeTypes.PureClass) {
+  shouldUpdate = !shallowEqual(prevProps, nextProps) || ! shallowEqual(inst.state, nextState);
+}
+
+```
+
+`shallowEqual` 是如何实现的。
+
+```js
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+
+/**
+ * is 方法来判断两个值是否是相等的值，为何这么写可以移步 MDN 的文档
+ * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+function is(x: mixed, y: mixed): boolean {
+  if (x === y) {
+    return x !== 0 || y !== 0 || 1 / x === 1 / y;
+  } else {
+    return x !== x && y !== y;
+  }
+}
+
+function shallowEqual(objA: mixed, objB: mixed): boolean {
+  // 首先对基本类型进行比较
+  if (is(objA, objB)) {
+    return true;
+  }
+
+  if (typeof objA !== 'object' || objA === null ||
+      typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+	
+  // 长度不相等直接返回false
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  // key相等的情况下，再去循环比较
+  for (let i = 0; i < keysA.length; i++) {
+    if (
+      !hasOwnProperty.call(objB, keysA[i]) ||
+      !is(objA[keysA[i]], objB[keysA[i]])
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+```
+
+
+
 ## 使用 React.memo 进行组件记忆
 
 这里与纯组件类似，如果输入 props 相同则跳过组件渲染，从而提升组件性能。
