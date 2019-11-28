@@ -361,3 +361,171 @@ watch是命令式和重复式的，假如监听涉及到多个属性，代码就
 1. 在 Vue 中，从性能/体验的性价比考虑，就弃用了这个特性。Object.defineProperty无法监控到数组下标的变化，导致通过数组下标添加元素，不能实时响应；
 2. Object.defineProperty只能劫持对象的属性，从而需要对每个对象，每个属性进行遍历，如果，属性值是对象，还需要深度遍历。Proxy可以劫持整个对象，并返回一个新的对象。
 3. Proxy不仅可以代理对象，还可以代理数组。还可以代理动态增加的属性。
+
+
+
+
+
+## 组件间通讯
+
+### props
+
+父组件传递给子组件
+
+```js
+// 数组:不建议使用
+props:[]
+
+// 对象
+props:{
+ inpVal:{
+  type:Number, //传入值限定类型
+  // type 值可为String,Number,Boolean,Array,Object,Date,Function,Symbol
+  // type 还可以是一个自定义的构造函数，并且通过 instanceof 来进行检查确认
+  required: true, //是否必传
+  default:200,  //默认值,对象或数组默认值必须从一个工厂函数获取如 default:()=>[]
+  validator:(value) {
+    // 这个值必须匹配下列字符串中的一个
+    return ['success', 'warning', 'danger'].indexOf(value) !== -1
+  }
+ }
+}
+
+```
+
+
+
+### $emit
+
+子组件传递给父组件
+
+```js
+// 父组件
+<home @title="title">
+// 子组件
+this.$emit('title',[{title:'这是title'}])
+```
+
+
+
+### attrs
+
+获取子传父中未在 props 定义的值
+
+```js
+// 父组件
+<home title="这是标题" width="80" height="80" imgUrl="imgUrl"/>
+
+// 子组件
+mounted() {
+  console.log(this.$attrs) //{title: "这是标题", width: "80", height: "80", imgUrl: "imgUrl"}
+},
+```
+
+
+
+### listeners
+
+listeners" 传入内部组件——在创建更高层次的组件时非常有用
+
+```js
+// 父组件
+<home @change="change"/>
+
+// 子组件
+mounted() {
+  console.log(this.$listeners) //即可拿到 change 事件
+}
+```
+
+
+
+###  provide和inject
+
+描述: provide 和 inject 主要为高阶插件/组件库提供用例。并不推荐直接用于应用程序代码中; 并且这对选项需要一起使用; 以允许一个祖先组件向其所有子孙后代注入一个依赖，不论组件层次有多深，并在起上下游关系成立的时间里始终生效。
+
+```js
+//父组件:
+provide: { //provide 是一个对象,提供一个属性或方法
+  foo: '这是 foo',
+  fooMethod:()=>{
+    console.log('父组件 fooMethod 被调用')
+  }
+},
+
+// 子或者孙子组件
+inject: ['foo','fooMethod'], //数组或者对象,注入到子组件
+mounted() {
+  this.fooMethod()
+  console.log(this.foo)
+}
+//在父组件下面所有的子组件都可以利用inject
+
+```
+
+
+
+### parent和children
+
+```js
+//父组件
+mounted(){
+  console.log(this.$children) 
+  //可以拿到 一级子组件的属性和方法
+  //所以就可以直接改变 data,或者调用 methods 方法
+}
+
+//子组件
+mounted(){
+  console.log(this.$parent) //可以拿到 parent 的属性和方法
+}
+```
+
+
+
+### $refs
+
+```j&#39;s
+// 父组件
+<home ref="home"/>
+
+mounted(){
+  console.log(this.$refs.home) //即可拿到子组件的实例,就可以直接操作 data 和 methods
+}
+
+```
+
+
+
+### $root
+
+```
+// 父组件
+mounted(){
+  console.log(this.$root) //获取根实例,最后所有组件都是挂载到根实例上
+  console.log(this.$root.$children[0]) //获取根实例的一级子组件
+  console.log(this.$root.$children[0].$children[0]) //获取根实例的二级子组件
+}
+
+```
+
+
+
+## vueX
+
+
+
+```
+state:定义存贮数据的仓库 ,可通过this.$store.state 或mapState访问
+getter:获取 store 值,可认为是 store 的计算属性,可通过this.$store.getter 或
+       mapGetters访问
+mutation:同步改变 store 值,为什么会设计成同步,因为mutation是直接改变 store 值,
+         vue 对操作进行了记录,如果是异步无法追踪改变.可通过mapMutations调用
+action:异步调用函数执行mutation,进而改变 store 值,可通过 this.$dispatch或mapActions
+       访问
+modules:模块,如果状态过多,可以拆分成模块,最后在入口通过...解构引入
+```
+
+
+
+### 
