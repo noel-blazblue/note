@@ -1,3 +1,15 @@
+### 什么是React-hooks？
+
+react-hook 是一种基于 immutable 方式的编程方法和编程思想。是一种声明式的心智模型
+
+
+
+**编程方法：**useState等api，声明式钩子。
+
+**编程思想：**以model为主导，低耦合、高复用的函数式的编写方式。
+
+
+
 ### API简介
 
 #### useState
@@ -61,7 +73,7 @@ setCount(count => count + 1)
 
 - 在完成渲染**之后**，异步执行，使用`requestIdleCallback`，在浏览器空闲时间执行传入的callback，16毫秒一帧。
 
-- 回调函数的返回值，不仅仅是在组件卸载前执行的，还会在下一个`useEffect`触发前执行。
+- 与`componentWillDestroyed`不同，回调函数的返回值，不仅仅是在组件卸载前执行的，还会在下一个`useEffect`触发前执行。
 
 ```js
 useEffect(
@@ -172,7 +184,7 @@ react-hooks 是 `immutable`的，而`useRef`则是`mutable`，相当于走了个
 
 ##### 使用场景
 
-1. **保存一个字面量的引用类型的数据**
+1. **保存一个引用类型的数据**
 
 
 
@@ -258,6 +270,12 @@ const usePreviousValue = value => {
 
 
 
+函数本身是静态编译的，是不会改变的，变的是参数和环境。react-hook 每render一次，是在创建函数对象以及闭包。
+
+对于单个组件而言，只需要创建一次闭包就行了。因此，除非是组件嵌套层级多，否则无需担心性能问题。
+
+
+
 编译前：
 
 ```js
@@ -336,3 +354,115 @@ function handleAlertClick() {
 
 ### 自定义hooks
 
+#### 前端分层
+
+以前端划分，可分为数据层，逻辑层，视图层。
+
+以框架的设计理念来划分，则是mvvm，一个状态驱动视图的模型。
+
+![img](http://5b0988e595225.cdn.sohucs.com/images/20180409/5e85879b6670487f9ce301c728c3382f.jpg)
+
+```js
+class Timer extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { seconds: 0 };
+  }
+  tick() {
+    this.setState(state => ({
+      seconds: state.seconds + 1
+    }));
+  }
+  render() {
+    return (
+      <div>
+        Seconds: {this.state.seconds}
+      </div>
+    );
+  }
+}
+```
+
+```js
+const Person = Vue.extend({
+  template: `
+    <div>
+      <span>{{name}}</span>
+      <span>{{age}}</span>
+    </div>
+  `,
+  data() {
+    return {
+      name: 'some',
+      age: 10,
+    }
+  },
+  methods: {
+    getName() {
+      return this.name
+    },
+    setAge(age) {
+      this.age = age
+    },
+  },
+})
+```
+
+
+
+react class 组件与vue2.0 组件，其实只是UI框架，状态和视图耦合在一块，一切都是为视图而服务，没有独立的一层model。
+
+很多本该由 service层，model层去做的事情，都放在了view层去做。导致view层在处理前端交互的同时，还要去处理业务逻辑，与接口通信。代码耦合性严重，不利于复用。
+
+redux、vuex可以算做model层，但是其本身是为了解决组件通信的问题，把它定义为处理单个页面的业务，并不是一种很好的实践。数据和逻辑处理本就该由单个模块自己去解决，才能形成高内聚，低耦合的架构。
+
+
+
+#### model是什么
+
+```js
+class Good {
+  type = ''
+  price = 0
+  count = 0
+
+  up(count) {
+    this.count += count
+  }
+  down(count) {
+     this.count -= count
+  }
+}
+```
+
+这就是一个极为简单的模型，描述了一个商品应有的属性，以及可以进行什么样的操作。和上面两个例子不同，他只是描述自己本身，而不是为了服务于视图。他的模型是自洽的，形成一个闭环。
+
+
+
+如果加上状态驱动视图的模型，那就变成这样：
+
+```js
+const useGood = () => {
+  const [type, setType] = useState('');
+  const [price, setPrice] = useState(0);
+  const [count, setCount] = useState(0);
+
+  const up = (num) => {
+    setCount(count + num)
+  }
+
+  const down = (num) => {
+    setCount(count - num)
+  }
+  
+  return {count, up, down}
+}
+```
+
+这就是一个典型的自定义hooks，有自身的数据和逻辑，不受外部影响，只描述自身。
+
+
+
+在编写一个庞大且复杂的业务中，就可以以这种模式，拆分为一个个小的模块，且可以任意的组合、复用，形成一个高内聚、低耦合的架构。
+
+把model层划分出来，视图的归视图，逻辑的归逻辑，彼此互不干扰。这就是 react hooks 的编程思想。
