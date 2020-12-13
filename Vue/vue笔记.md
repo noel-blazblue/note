@@ -499,7 +499,7 @@ mounted(){
 
 ### $refs
 
-```j&#39;s
+```js
 // 父组件
 <home ref="home"/>
 
