@@ -1,3 +1,7 @@
+## react-hooks 基础知识分享
+
+
+
 ### 什么是React-hooks？
 
 react-hook 是一种基于 immutable 方式的编程方法和编程思想。是一种声明式的心智模型
@@ -57,6 +61,8 @@ setCount(3)
 // output count === 3
 ```
 
+每个hooks，内部都有一个队列去维护每一次setState，在同一次render中，只会执行队列链表中的尾部。
+
 
 
 **setState 可获取上次state的值**
@@ -73,7 +79,7 @@ setCount(count => count + 1)
 
 - 在完成渲染**之后**，异步执行，使用`requestIdleCallback`，在浏览器空闲时间执行传入的callback，16毫秒一帧。
 
-- 与`componentWillDestroyed`不同，回调函数的返回值，不仅仅是在组件卸载前执行的，还会在下一个`useEffect`触发前执行。
+- 与`componentWillUnmount`不同，回调函数的返回值，不仅仅是在组件卸载前执行的，还会在下一个`useEffect`触发前执行。
 
 ```js
 useEffect(
@@ -162,8 +168,10 @@ useEffect(
 
 useLayoutEffect与useEffect的执行流程：
 
+- setRunning(true)
 - render && useLayoutEffect1
 - useEffect1
+- setRunning(false)
 - render && clean useLayoutEffect1 && useLayoutEffect2
 - clean useEffect1
 - useEffect2
@@ -201,8 +209,15 @@ const useTimeout = (fn, time) => useEffect(
 这是一个简略的函数防抖，如果这么使用：
 
 ```js
+const fun = () => {}
+fun1
+fun2
+fun3
+fun4
 useInterval(() => setCounter(counter => counter + 1));
 ```
+
+
 
 他就会无限调用。因为每render一次，函数对象就会重新创建，useEffect监听到依赖值发生改变，就会重新调用。
 
@@ -232,6 +247,7 @@ class组件：
 
 ```js
 class Foo extends Component {
+ 	 	state
     componentDidUpdate(prevProps, prevState, snapshot) {}
     componentWillReceiveProps(nextProps) {}
 }
@@ -254,9 +270,9 @@ const usePreviousValue = value => {
 
 > React官方也曾经写过一些说明这一现象的博客，他们称`useRef`为“hook中的作弊器”，我想这个形容是准确的，所谓的“作弊”，其它是指它打破了类似`useCallback`、`useEffect`对闭包的约束，使用一个“可变的容器”让ref不需要成为闭包的依赖也可以在闭包中获得最新的内容。
 
-> **每一个希望深入hook实践的开发者都必须记住这个结论，无法自如地使用useRef会让你失去hook将近一半的能力。**
 
 
+### 函数闭包
 
 ### 函数闭包
 
@@ -283,6 +299,7 @@ const s = Math.random()
 
 function createFunction(s) {
   console.log('hello', s)
+  
 }
 createFunction(s)
 ```
@@ -398,6 +415,8 @@ const Person = Vue.extend({
     }
   },
   methods: {
+    fecht () {}
+    onSubmit () {}
     getName() {
       return this.name
     },
@@ -432,6 +451,7 @@ class Good {
   down(count) {
      this.count -= count
   }
+	
 }
 ```
 
@@ -465,4 +485,5 @@ const useGood = () => {
 
 在编写一个庞大且复杂的业务中，就可以以这种模式，拆分为一个个小的模块，且可以任意的组合、复用，形成一个高内聚、低耦合的架构。
 
-把model层划分出来，视图的归视图，逻辑的归逻辑，彼此互不干扰。这就是 react hooks 的编程思想。
+把model层划分出来，视图的归视图，逻辑的归逻辑，彼此互不干扰。从 view 导向，变成model导向，这就是 react hooks 的编程思想。
+
