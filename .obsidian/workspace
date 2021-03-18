@@ -1,0 +1,109 @@
+{
+  "main": {
+    "id": "85393636a9ed69d5",
+    "type": "split",
+    "children": [
+      {
+        "id": "1c29890eb0f75bde",
+        "type": "leaf",
+        "active": true,
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "React/协调.md",
+            "mode": "preview"
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2cd5a84b5b5003ae",
+    "type": "split",
+    "children": [
+      {
+        "id": "e1065452a4431ff2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "96e4d8c069c231a0",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "c060ac48bbc63fb9",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "67508e6e27a839fa",
+    "type": "split",
+    "children": [
+      {
+        "id": "098d97f1844133a1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2d1c8c3993285c94",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "React/协调.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "backlinkCollapsed": true,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "d02a5b2f72d0578c",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "React/协调.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 304
+  },
+  "lastOpenFiles": [
+    "React/协调.md",
+    "React/fiber.md",
+    "React/时间分片.md",
+    "React/函数式编程.md",
+    "React/Untitled.md",
+    "Untitled 1.md",
+    "Untitled.md",
+    "React/react-native.md",
+    "React/react-3 render更新流程.md",
+    "React/react-2.md"
+  ]
+}
