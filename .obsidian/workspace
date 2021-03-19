@@ -10,8 +10,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "React/fiber.md",
-            "mode": "preview"
+            "file": "React/Diff.md",
+            "mode": "source"
           }
         }
       }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "React/fiber.md",
+                "file": "React/Diff.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -84,7 +84,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "React/fiber.md"
+                "file": "React/Diff.md"
               }
             }
           }
@@ -96,15 +96,15 @@
     "width": 304
   },
   "lastOpenFiles": [
+    "React/Diff.md",
+    "React/时间分片.md",
+    "React/协调.md",
+    "React/组件更新流程.md",
     "React/fiber.md",
+    "React/Untitled.md",
     "React/react-3 render更新流程.md",
     "React/react-2.md",
     "React/react.md",
-    "React/协调.md",
-    "React/时间分片.md",
-    "JavaScript/移动端布局.md",
-    "React/函数式编程.md",
-    "React/Untitled.md",
-    "Untitled 1.md"
+    "JavaScript/移动端布局.md"
   ]
 }
