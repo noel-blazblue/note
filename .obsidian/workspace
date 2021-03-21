@@ -4,16 +4,29 @@
     "type": "split",
     "children": [
       {
-        "id": "1c29890eb0f75bde",
+        "id": "f8404171c0e26194",
         "type": "leaf",
         "active": true,
         "state": {
           "type": "markdown",
           "state": {
-            "file": "React/Diff.md",
+            "file": "React/React-hooks/useEffect.md",
             "mode": "source"
           }
-        }
+        },
+        "group": "50036256e3939b0f"
+      },
+      {
+        "id": "b12eff805d509d59",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "React/React-hooks/useEffect.md",
+            "mode": "preview"
+          }
+        },
+        "group": "50036256e3939b0f"
       }
     ],
     "direction": "vertical"
@@ -40,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "stateNode",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -53,7 +66,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "67508e6e27a839fa",
@@ -69,7 +83,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "React/Diff.md",
+                "file": "React/React-hooks/useEffect.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -84,7 +98,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "React/Diff.md"
+                "file": "React/React-hooks/useEffect.md"
               }
             }
           }
@@ -93,18 +107,19 @@
       }
     ],
     "direction": "horizontal",
-    "width": 304
+    "width": 304,
+    "collapsed": true
   },
   "lastOpenFiles": [
-    "React/Diff.md",
-    "React/时间分片.md",
-    "React/协调.md",
+    "React/React-hooks/useEffect.md",
+    "React/React-hooks/useState.md",
+    "React/Fiber.md",
+    "React/React-hooks/Untitled.md",
+    "React/React-hooks/React-hooks.md",
     "React/组件更新流程.md",
-    "React/fiber.md",
     "React/Untitled.md",
-    "React/react-3 render更新流程.md",
-    "React/react-2.md",
-    "React/react.md",
-    "JavaScript/移动端布局.md"
+    "React/协调.md",
+    "浏览器/渲染.md",
+    "浏览器/同源与跨域.docx.md"
   ]
 }

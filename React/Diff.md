@@ -67,8 +67,82 @@ function diffClassComponent(fiber: Fiber) {
 }
 ```
 
-##  diffChildren 
+### 调用class组件声明周期
+1. **[[Class声明周期#getDerivedStateFromProps|getDerivedStateFromProps]]**
+获取最新的state
 
+2. **判断是否要更新函数，`shouldComponentUpdate` 或 `PureComponent`。**
+ 如果存在 `shouldComponentUpdate` 函数则调用，并根据其返回的boolean值来决定是否更新。
+否则判断当前组件是否继承自`PureComponent` ，是则浅比较前后的`props`和`state`得出结果。
+
+3. **如果需要更新，则处理 `componentDidUpdate` 及 `getSnapshotBeforeUpdate` 函数**
+调和阶段并不会调用以上两个函数，而是打上 tag 以便将来使用位运算知晓是否需要使用它们。`effectTag` 这个属性在整个更新的流程中都是至关重要的一员，凡是涉及到**函数的延迟调用、devTool 的处理、DOM 的更新**都可能会使用到它。
+
+```js
+if (typeof instance.componentDidUpdate === 'function') {
+    workInProgress.effectTag |= Update;
+}
+if (typeof instance.getSnapshotBeforeUpdate === 'function') {
+    workInProgress.effectTag |= Snapshot;
+}
+```
+
+##  reconcileChildren
+https://react.jokcy.me/book/flow/reconcile-children/array.html
+
+### 第一轮遍历：复用和当前节点索引一致的老节点
+ 
+ -   新旧节点都为文本节点，可以直接复用，因为文本节点不需要 key
+ -   其他类型节点一律通过判断 key 是否相同来复用或创建节点（可能类型不同但 key 相同）
+
+一旦出现不能复用的情况就跳出遍历.
+
+```js
+for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+  // 找到下一个老的子节点
+  nextOldFiber = oldFiber.sibling;
+  // 通过 oldFiber 和 newChildren[newIdx] 判断是否可以复用
+  // 并给复用出来的节点的 return 属性赋值 returnFiber
+  const newFiber = reuse(
+    returnFiber,
+    oldFiber,
+    newChildren[newIdx]
+  );
+  // 不能复用，跳出
+  if (newFiber === null) {
+    break;
+  }
+}
+
+```
+ 
+ ### 第二轮遍历：三种情况
+ 
+第一轮遍历完之后，会出现三种情况
+1. **新节点已遍历完**
+	这个时候删除剩余老节点即可，设置 `effectTag` 为 `Deletion`
+2. **老节点已遍历完**
+	把剩余的新节点全部创建完毕即可
+3. **新老节点都有剩余**
+	那就进入第三轮遍历
+ 
+ ### 第三轮遍历：把老节点存入map，通过key来进行复用
+ 
+ ```js
+ // 节点的 key 作为 map 的 key
+// 如果节点不存在 key，那么 index 为 key
+const map = {
+    1: {},
+    2: {}
+}
+```
+ 
+ 在遍历的过程中会寻找新节点的 key 是否存在于这个 `map` 中，存在即把这个节点移动位置，并给他的 `effectTag` 赋值为 `Placement`。 然后把 `key` 从 `map` 中删掉。
+
+如果不存在，则创建一个新的。
+ 
+ 此轮遍历结束后，就把还存在于 `map` 中的所有老节点删除。
+ 
  子节点比对: 
 
 ```js

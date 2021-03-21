@@ -280,3 +280,136 @@ if (
 
 - `channel.port1.onmessage` 会在渲染后被调用，在这个过程中我们首先需要去判断**当前时间是否小于下一帧时间**。如果小于的话就代表我们尚有空余时间去执行任务；如果大于的话就代表当前帧已经没有空闲时间了，这时候我们需要去判断是否有任务过期，**过期的话不管三七二十一还是得去执行这个任务**。如果没有过期的话，那就只能把这个任务丢到下一帧看能不能执行了
 
+
+```js
+export function useReducer<S, A>(
+  reducer: (S, A) => S,
+  initialState: S,
+  initialAction: A | void | null,
+): [S, Dispatch<A>] {
+  currentlyRenderingFiber = resolveCurrentlyRenderingFiber();
+  workInProgressHook = createWorkInProgressHook();
+  let queue: UpdateQueue<A> | null = (workInProgressHook.queue: any);
+  if (queue !== null) {
+    // Already have a queue, so this is an update.
+    if (isReRender) {
+      // This is a re-render. Apply the new render phase updates to the previous
+      // work-in-progress hook.
+      const dispatch: Dispatch<A> = (queue.dispatch: any);
+      if (renderPhaseUpdates !== null) {
+        // Render phase updates are stored in a map of queue -> linked list
+        const firstRenderPhaseUpdate = renderPhaseUpdates.get(queue);
+        if (firstRenderPhaseUpdate !== undefined) {
+          renderPhaseUpdates.delete(queue);
+          let newState = workInProgressHook.memoizedState;
+          let update = firstRenderPhaseUpdate;
+          do {
+            // Process this render phase update. We don't have to check the
+            // priority because it will always be the same as the current
+            // render's.
+            const action = update.action;
+            newState = reducer(newState, action);
+            update = update.next;
+          } while (update !== null);
+
+          workInProgressHook.memoizedState = newState;
+
+          // Don't persist the state accumlated from the render phase updates to
+          // the base state unless the queue is empty.
+          // TODO: Not sure if this is the desired semantics, but it's what we
+          // do for gDSFP. I can't remember why.
+          if (workInProgressHook.baseUpdate === queue.last) {
+            workInProgressHook.baseState = newState;
+          }
+
+          return [newState, dispatch];
+        }
+      }
+      return [workInProgressHook.memoizedState, dispatch];
+    }
+
+    // The last update in the entire queue
+    const last = queue.last;
+    // The last update that is part of the base state.
+    const baseUpdate = workInProgressHook.baseUpdate;
+
+    // Find the first unprocessed update.
+    let first;
+    if (baseUpdate !== null) {
+      if (last !== null) {
+        // For the first update, the queue is a circular linked list where
+        // `queue.last.next = queue.first`. Once the first update commits, and
+        // the `baseUpdate` is no longer empty, we can unravel the list.
+        last.next = null;
+      }
+      first = baseUpdate.next;
+    } else {
+      first = last !== null ? last.next : null;
+    }
+    if (first !== null) {
+      let newState = workInProgressHook.baseState;
+      let newBaseState = null;
+      let newBaseUpdate = null;
+      let prevUpdate = baseUpdate;
+      let update = first;
+      let didSkip = false;
+      do {
+        const updateExpirationTime = update.expirationTime;
+        if (updateExpirationTime < renderExpirationTime) {
+          // Priority is insufficient. Skip this update. If this is the first
+          // skipped update, the previous update/state is the new base
+          // update/state.
+          if (!didSkip) {
+            didSkip = true;
+            newBaseUpdate = prevUpdate;
+            newBaseState = newState;
+          }
+          // Update the remaining priority in the queue.
+          if (updateExpirationTime > remainingExpirationTime) {
+            remainingExpirationTime = updateExpirationTime;
+          }
+        } else {
+          // Process this update.
+          const action = update.action;
+          newState = reducer(newState, action);
+        }
+        prevUpdate = update;
+        update = update.next;
+      } while (update !== null && update !== first);
+
+      if (!didSkip) {
+        newBaseUpdate = prevUpdate;
+        newBaseState = newState;
+      }
+
+      workInProgressHook.memoizedState = newState;
+      workInProgressHook.baseUpdate = newBaseUpdate;
+      workInProgressHook.baseState = newBaseState;
+    }
+
+    const dispatch: Dispatch<A> = (queue.dispatch: any);
+    return [workInProgressHook.memoizedState, dispatch];
+  }
+
+  // There's no existing queue, so this is the initial render.
+  if (reducer === basicStateReducer) {
+    // Special case for `useState`.
+    if (typeof initialState === 'function') {
+      initialState = initialState();
+    }
+  } else if (initialAction !== undefined && initialAction !== null) {
+    initialState = reducer(initialState, initialAction);
+  }
+  workInProgressHook.memoizedState = workInProgressHook.baseState = initialState;
+  queue = workInProgressHook.queue = {
+    last: null,
+    dispatch: null,
+  };
+  const dispatch: Dispatch<A> = (queue.dispatch = (dispatchAction.bind(
+    null,
+    currentlyRenderingFiber,
+    queue,
+  ): any));
+  return [workInProgressHook.memoizedState, dispatch];
+}
+```

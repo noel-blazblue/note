@@ -98,7 +98,7 @@ interface Fiber {
   memoizedProps: any, // The props used to create the output.
   // 上一次渲染的组件状态
   memoizedState: any,
-
+  updateQueue: UpdateQueue<any> | null, 
 
   /**
    * ⚛️ 副作用
@@ -107,7 +107,9 @@ interface Fiber {
   effectTag: SideEffectTag,
   // 和节点关系一样，React 同样使用链表来将所有有副作用的Fiber连接起来
   nextEffect: Fiber | null,
-
+  firstEffect: Fiber | null, // 第一个需要进行 DOM 操作的节点
+  lastEffect: Fiber | null, // 最后一个需要进行 DOM 操作的节点，同时也可用于恢复任务
+  
   /**
    * ⚛️ 替身
    * 指向旧树中的节点
