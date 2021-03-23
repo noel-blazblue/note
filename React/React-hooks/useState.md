@@ -1,5 +1,6 @@
 
 ## useState
+useState是一个让函数组件中拥有自己的内部状态的一个方法，
 
 ### 数据结构
 函数组件内的所有hooks会组成一个单链表
@@ -16,7 +17,7 @@ export type Hook = {
 ```
 
 ### mount 阶段
-在mount阶段会进行一些初始化的操作，把组件内的所有hooks依次创建一个节点，并组成一个链表，然后挂载到当前的[[Fiber]]节点的`momeizeState`属性中。
+在mount阶段会进行一些初始化的操作，把组件内的所有hooks依次创建一个节点，并组成一个链表，然后挂载到当前的[[Fiber]]节点的`memoizeState`属性中。
 
 对于class组件而言这个属性就是他自身的state，对于hook 组件而言，则是他里面的所有hooks方法。
 
@@ -108,7 +109,7 @@ function dispatchAction(fiber,queue,action,) {
     // 将表头保持在最新的update对象上
     queue.last = update;
    // 进行调度工作
-    scheduleWork();
+    scheduleUpdateOnFiber();
 }
 
 ```

@@ -25,3 +25,6 @@ const HooksDispatcherOnUpdate: Dispatcher = {
 ```
 
 - [[useState]]
+
+
+![](https://user-gold-cdn.xitu.io/2020/3/15/170dc56bff5a5a71?imageslim)

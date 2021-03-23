@@ -169,6 +169,20 @@ CSS 声明可以生成 BFC，浏览器对生成的 BFC 有一系列的渲染规�
 
 ## 布局
 
+### 盒子模型
+由从内到外的四个部分构成，即内容区（content）、内边距(padding)、边框(border)和外边距(margin)。内容区是盒子模型的中心，呈现盒子的主要信息内容；内边距是内容区和边框之间的空间；边框是环绕内容区和内边距的边界；外边距位于盒子的最外围，是添加在边框外周围的空间。
+
+![](https://user-gold-cdn.xitu.io/2019/11/22/16e930e04e31efa6?imageslim)
+
+根据计算宽高的区域我们可以将其分为`IE盒模型`和`W3C标准盒模型`，可以通过`box-sizing`来进行设置：
+
+-   `content-box`：W3C标准盒模型
+-   `border-box`：IE盒模型
+
+区别：  
+`W3C标准盒模型`：width(宽度) = content(内容宽度)  
+`IE盒模型`：width(宽度) = content(内容宽度) + padding(内边距) + border(边框)
+
 ### 垂直居中
 
 #### 定位
