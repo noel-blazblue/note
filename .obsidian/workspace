@@ -4,24 +4,13 @@
     "type": "split",
     "children": [
       {
-        "id": "b12eff805d509d59",
+        "id": "ab499f704c2b1ef0",
         "type": "leaf",
         "active": true,
         "state": {
           "type": "markdown",
           "state": {
-            "file": "React/React-hooks/useState.md",
-            "mode": "source"
-          }
-        }
-      },
-      {
-        "id": "4fd1dcc923e6116b",
-        "type": "leaf",
-        "state": {
-          "type": "markdown",
-          "state": {
-            "file": "文章/hooks 源码浅析.md",
+            "file": "work/报工管理交接.md",
             "mode": "source"
           }
         }
@@ -81,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "React/React-hooks/useState.md",
+                "file": "work/报工管理交接.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -96,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "React/React-hooks/useState.md"
+                "file": "work/报工管理交接.md"
               }
             }
           }
@@ -105,19 +94,18 @@
       }
     ],
     "direction": "horizontal",
-    "width": 304,
-    "collapsed": true
+    "width": 304
   },
   "lastOpenFiles": [
+    "work/报工管理交接.md",
+    "面试题/面试准备.md",
+    "work/自我介绍.md",
+    "work/Untitled.md",
     "React/React-hooks/useState.md",
     "文章/hooks 源码浅析.md",
     "React/Fiber.md",
     "React/Redux.md",
     "React/React-hooks/useEffect.md",
-    "React/React-hooks/useImperativeHandle.md",
-    "work/Untitled.md",
-    "work/app简略手册.md",
-    "work/release-1.7.md",
-    "work/react-hook分享.md"
+    "React/React-hooks/useImperativeHandle.md"
   ]
 }
