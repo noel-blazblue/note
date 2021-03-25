@@ -83,6 +83,11 @@ interface Fiber {
   sibling: Fiber | null,
   // 子节点的唯一键, 即我们渲染列表传入的key属性
   key: null | string,
+	/**
+   * ⚛️ 替身
+   * 指向旧树中的节点
+   */
+  alternate: Fiber | null,
 
   /**
    * ⚛️ 节点的状态
@@ -98,6 +103,8 @@ interface Fiber {
   memoizedProps: any, // The props used to create the output.
   // 上一次渲染的组件状态
   memoizedState: any,
+	// 更新队列，setState时会把action enqueue进去。
+	// 如果是hooks，这个地方会存放effect对象
   updateQueue: UpdateQueue<any> | null, 
 
   /**
@@ -110,11 +117,7 @@ interface Fiber {
   firstEffect: Fiber | null, // 第一个需要进行 DOM 操作的节点
   lastEffect: Fiber | null, // 最后一个需要进行 DOM 操作的节点，同时也可用于恢复任务
   
-  /**
-   * ⚛️ 替身
-   * 指向旧树中的节点
-   */
-  alternate: Fiber | null,
+  
 }
 ```
 

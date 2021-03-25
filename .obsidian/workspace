@@ -10,7 +10,18 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "面试题/面试准备.md",
+            "file": "React/React-hooks/useState.md",
+            "mode": "source"
+          }
+        }
+      },
+      {
+        "id": "4fd1dcc923e6116b",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "文章/hooks 源码浅析.md",
             "mode": "source"
           }
         }
@@ -53,7 +64,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "67508e6e27a839fa",
@@ -69,7 +81,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "面试题/面试准备.md",
+                "file": "React/React-hooks/useState.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -84,7 +96,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "面试题/面试准备.md"
+                "file": "React/React-hooks/useState.md"
               }
             }
           }
@@ -97,15 +109,15 @@
     "collapsed": true
   },
   "lastOpenFiles": [
-    "面试题/面试准备.md",
-    "面试题/前端性能优化.md",
-    "面试题/编程题.md",
-    "面试题/HTML笔记.md",
-    "面试题/Untitled.md",
     "React/React-hooks/useState.md",
-    "React/React-Class/setState.md",
-    "React/React-Class/Class声明周期.md",
-    "React/Class声明周期.md",
-    "React/React概念.md"
+    "文章/hooks 源码浅析.md",
+    "React/Fiber.md",
+    "React/Redux.md",
+    "React/React-hooks/useEffect.md",
+    "React/React-hooks/useImperativeHandle.md",
+    "work/Untitled.md",
+    "work/app简略手册.md",
+    "work/release-1.7.md",
+    "work/react-hook分享.md"
   ]
 }
