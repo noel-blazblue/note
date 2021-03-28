@@ -10,8 +10,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "work/报工管理交接.md",
-            "mode": "source"
+            "file": "文章/hooks 源码浅析.md",
+            "mode": "preview"
           }
         }
       }
@@ -53,8 +53,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "67508e6e27a839fa",
@@ -70,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "work/报工管理交接.md",
+                "file": "文章/hooks 源码浅析.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +84,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "work/报工管理交接.md"
+                "file": "文章/hooks 源码浅析.md"
               }
             }
           }
@@ -97,6 +96,7 @@
     "width": 304
   },
   "lastOpenFiles": [
+    "文章/hooks 源码浅析.md",
     "work/报工管理交接.md",
     "React/微信图片_20190718104604.jpg",
     "React/React概念.md",
@@ -104,7 +104,6 @@
     "work/自我介绍.md",
     "work/Untitled.md",
     "React/React-hooks/useState.md",
-    "文章/hooks 源码浅析.md",
     "React/Fiber.md",
     "React/Redux.md"
   ]

@@ -7,7 +7,6 @@
 ## 基础架构
 
 ### Fiber 简介
-
 fiber 是 React 架构中的一个基本工作单元，里面会存放组件的实例、状态、结构关系、副作用。react中的大部分逻辑都依托于这个结构来实现。
 
 ```js
@@ -61,13 +60,26 @@ interface Fiber {
 }
 ```
 
-对于class组件，stateNode 属性会存放它的实例。这样就能通过stateNode.render 等方法来获取jsx、调用生命周期，以及更新组件的状态。
+对于class组件，stateNode 属性会存放它的实例。这样就能通过实例来访问组件的 jsx、生命周期方法，组件的状态。
 
-但是函数组件是没有实例的，如果在里面写hooks方法，要怎样才能拿到这些信息并加以操作呢？
+伪代码：
+
+```js
+const instance = fiber.stateNode
+const children = instance.render()
+instance.componentDidMount()
+```
+
+但是函数组件是没有实例的，如果在里面写hooks方法，要怎样才能拿到这些数据并加以操作呢？
 
 **答案是通过链表**
 
-每一个hook方法，实际上都会创建一个节点，在内部保存类似于fiber结构这样的信息。然后链接起来，组成一个单链表。最终挂载到当前的 fiber 节点上。
+所有hooks会组成一个链表，然后挂载到当前fiber节点上。
+
+### 挂载阶段
+hooks在初次调用时，会使用`mountWorkInProgressHook`方法，去创建一个hook节点，并挂载到当前的fiber节点的`memoizedState`属性中。
+
+`memoizedState`，顾名思义，是保存一个状态，如 Class组件中的 `this.state` 。而在函数组件中，hooks就是他的状态。
 
 ```js
 function mountWorkInProgressHook(): Hook {
@@ -82,11 +94,96 @@ function mountWorkInProgressHook(): Hook {
   };
 
   if (workInProgressHook === null) {
-    // This is the first hook in the list
+		// currentlyRenderingFiber: 当前的fiber节点
     currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
   } else {
-    // Append to the end of the list
+		// workInProgressHook：指向当前的hook节点
+		// 把创建好的hook节点链接到链表的尾部
     workInProgressHook = workInProgressHook.next = hook;
+  }
+  return workInProgressHook;
+}
+```
+
+例如：
+```js
+function Test() {
+	const [state1, setState1] = useState()
+	const [state2, setState2] = useState()
+	
+	useEffect1(
+		() => {},
+		[]
+	)
+	useEffect2(
+		() => {},
+		[]
+	)
+}
+```
+
+![[Pasted image 20210327125830.png]]
+
+
+### 更新阶段
+```js
+function updateWorkInProgressHook(): Hook {
+  // This function is used both for updates and for re-renders triggered by a
+  // render phase update. It assumes there is either a current hook we can
+  // clone, or a work-in-progress hook from a previous render pass that we can
+  // use as a base. When we reach the end of the base list, we must switch to
+  // the dispatcher used for mounts.
+  let nextCurrentHook: null | Hook;
+  if (currentHook === null) {
+    const current = currentlyRenderingFiber.alternate;
+    if (current !== null) {
+      nextCurrentHook = current.memoizedState;
+    } else {
+      nextCurrentHook = null;
+    }
+  } else {
+    nextCurrentHook = currentHook.next;
+  }
+
+  let nextWorkInProgressHook: null | Hook;
+  if (workInProgressHook === null) {
+    nextWorkInProgressHook = currentlyRenderingFiber.memoizedState;
+  } else {
+    nextWorkInProgressHook = workInProgressHook.next;
+  }
+
+  if (nextWorkInProgressHook !== null) {
+    // There's already a work-in-progress. Reuse it.
+    workInProgressHook = nextWorkInProgressHook;
+    nextWorkInProgressHook = workInProgressHook.next;
+
+    currentHook = nextCurrentHook;
+  } else {
+    // Clone from the current hook.
+
+    invariant(
+      nextCurrentHook !== null,
+      'Rendered more hooks than during the previous render.',
+    );
+    currentHook = nextCurrentHook;
+
+    const newHook: Hook = {
+      memoizedState: currentHook.memoizedState,
+
+      baseState: currentHook.baseState,
+      baseQueue: currentHook.baseQueue,
+      queue: currentHook.queue,
+
+      next: null,
+    };
+
+    if (workInProgressHook === null) {
+      // This is the first hook in the list.
+      currentlyRenderingFiber.memoizedState = workInProgressHook = newHook;
+    } else {
+      // Append to the end of the list.
+      workInProgressHook = workInProgressHook.next = newHook;
+    }
   }
   return workInProgressHook;
 }
