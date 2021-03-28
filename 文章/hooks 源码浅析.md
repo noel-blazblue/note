@@ -2,6 +2,8 @@
 
 本文主要解释 hooks 这部分的源码，让大家在用hooks开发业务中能有一个清晰的认识。对于fiber架构和任务调度，只会略微提及。不过我建议大家最好先了解一下，尽管不懂这部分流程，仍然可以看懂hook。
 
+
+
 社区上的一些优秀文章：
 
 ## 基础架构
@@ -74,10 +76,36 @@ instance.componentDidMount()
 
 **答案是通过链表**
 
-所有hooks会组成一个链表，然后挂载到当前fiber节点上。
+每一个hook方法在初次调用时，都会创建一个节点，在其中保存一些状态，并把他们之间互相链接起来，组成一个链表。最终挂载到当前fiber节点上，然后就可以通过fiber上的引用，来获取到hooks。
+
+这个过程会在hooks的挂载阶段去执行。
 
 ### 挂载阶段
-hooks在初次调用时，会使用`mountWorkInProgressHook`方法，去创建一个hook节点，并挂载到当前的fiber节点的`memoizedState`属性中。
+
+众所周知，每一次`render`，函数组件都会重新执行一遍。因此里面的hooks方法也会跟着执行。在它第一次执行的时候，我们称之为**挂载阶段**，往后就称之为**更新阶段**。
+
+事实上，在react内部，这两个阶段调用的是不同的hooks方法。
+
+```js
+// react-reconciler/src/ReactFiberHooks.js
+// Mount 阶段Hooks的定义
+const HooksDispatcherOnMount: Dispatcher = {
+  useEffect: mountEffect,
+  useReducer: mountReducer,
+  useState: mountState,
+ // 其他Hooks
+};
+
+// Update阶段Hooks的定义
+const HooksDispatcherOnUpdate: Dispatcher = {
+  useEffect: updateEffect,
+  useReducer: updateReducer,
+  useState: updateState,
+  // 其他Hooks
+};
+```
+
+hooks链表的创建，主要依赖`mountWorkInProgressHook`这个方法，所有的hooks都会统一使用这个方法来创建一个节点，并push到链表的尾部，链表的头部则挂载到当前的fiber节点的`memoizedState`属性中。
 
 `memoizedState`，顾名思义，是保存一个状态，如 Class组件中的 `this.state` 。而在函数组件中，hooks就是他的状态。
 
@@ -105,7 +133,8 @@ function mountWorkInProgressHook(): Hook {
 }
 ```
 
-例如：
+例子：
+
 ```js
 function Test() {
 	const [state1, setState1] = useState()
@@ -122,17 +151,17 @@ function Test() {
 }
 ```
 
+会实现成：
+
 ![[Pasted image 20210327125830.png]]
 
 
 ### 更新阶段
+
+到了更新阶段，与挂载阶段对应，hooks所要做的就是从链表中取出对应的节点。
+
 ```js
 function updateWorkInProgressHook(): Hook {
-  // This function is used both for updates and for re-renders triggered by a
-  // render phase update. It assumes there is either a current hook we can
-  // clone, or a work-in-progress hook from a previous render pass that we can
-  // use as a base. When we reach the end of the base list, we must switch to
-  // the dispatcher used for mounts.
   let nextCurrentHook: null | Hook;
   if (currentHook === null) {
     const current = currentlyRenderingFiber.alternate;

@@ -4,14 +4,14 @@
     "type": "split",
     "children": [
       {
-        "id": "ab499f704c2b1ef0",
+        "id": "f910c47ca023bd08",
         "type": "leaf",
         "active": true,
         "state": {
           "type": "markdown",
           "state": {
             "file": "文章/hooks 源码浅析.md",
-            "mode": "preview"
+            "mode": "source"
           }
         }
       }
@@ -93,18 +93,19 @@
       }
     ],
     "direction": "horizontal",
-    "width": 304
+    "width": 304,
+    "collapsed": true
   },
   "lastOpenFiles": [
     "文章/hooks 源码浅析.md",
+    "React/React-hooks/React-hooks.md",
+    "React/React-hooks/useState.md",
+    "文章/Untitled.md",
     "work/报工管理交接.md",
     "React/微信图片_20190718104604.jpg",
     "React/React概念.md",
     "面试题/面试准备.md",
     "work/自我介绍.md",
-    "work/Untitled.md",
-    "React/React-hooks/useState.md",
-    "React/Fiber.md",
-    "React/Redux.md"
+    "work/Untitled.md"
   ]
 }
