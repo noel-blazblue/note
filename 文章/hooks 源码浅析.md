@@ -6,6 +6,12 @@
 
 社区上的一些优秀文章：
 
+通过这一篇文章，你可以懂得：
+- hooks 是如何保存在组件中的
+- setState 的更新流程
+- useEffect，useLayoutEffect, useImperativeHandle 的区别
+- useMemo 的执行阶段
+
 ## 基础架构
 
 ### Fiber 简介
@@ -89,8 +95,6 @@ instance.componentDidMount()
 ```js
 // 挂载阶段
 const HooksDispatcherOnMount: Dispatcher = {
-  readContext,
-
   useCallback: mountCallback,
   useContext: readContext,
   useEffect: mountEffect,
@@ -100,19 +104,13 @@ const HooksDispatcherOnMount: Dispatcher = {
   useReducer: mountReducer,
   useRef: mountRef,
   useState: mountState,
-  useDebugValue: mountDebugValue,
-  useDeferredValue: mountDeferredValue,
   useTransition: mountTransition,
   useMutableSource: mountMutableSource,
   useOpaqueIdentifier: mountOpaqueIdentifier,
-
-  unstable_isNewReconciler: enableNewReconciler,
 };
 
 // 更新阶段
 const HooksDispatcherOnUpdate: Dispatcher = {
-  readContext,
-
   useCallback: updateCallback,
   useContext: readContext,
   useEffect: updateEffect,
@@ -122,19 +120,16 @@ const HooksDispatcherOnUpdate: Dispatcher = {
   useReducer: updateReducer,
   useRef: updateRef,
   useState: updateState,
-  useDebugValue: updateDebugValue,
-  useDeferredValue: updateDeferredValue,
   useTransition: updateTransition,
   useMutableSource: updateMutableSource,
   useOpaqueIdentifier: updateOpaqueIdentifier,
-
-  unstable_isNewReconciler: enableNewReconciler,
 };
 ```
 
-主要是通过下面这个方法来区分，挂载时，`current`参数会传null，更新时，`current`参数会传当前fiber节点。
+在`renderWithHooks`中，会判断当前这个阶段所需的是哪些方法。
 
 ```js
+// 挂载时，`current`参数会传null，更新时，`current`参数会传当前fiber节点。
 function renderWithHooks (current) {
 	ReactCurrentDispatcher.current =
 		current === null || current.memoizedState === null
@@ -143,13 +138,13 @@ function renderWithHooks (current) {
 }
 ```
 
-挂载阶段的hooks，需要进行一个挂载逻辑，用`mountWorkInProgressHook`这个方法，来创建一个节点，并link到链表的尾部，链表的头部则赋值到当前的fiber节点的`memoizedState`属性中。
+`mount`系列的hooks，会用`mountWorkInProgressHook`这个方法，来创建一个节点，并link到链表的尾部，链表的头部则赋值到当前的fiber节点的`memoizedState`属性中。
 
 `memoizedState`，顾名思义，是保存一个状态，如 Class组件中的 `this.state` 。而在函数组件中，hooks就是他的状态。
 
 ```js
 function mountWorkInProgressHook(): Hook {
-	// 创建一个hook节点
+  // 创建一个hook节点
   const hook: Hook = {
     memoizedState: null,
 
@@ -161,7 +156,7 @@ function mountWorkInProgressHook(): Hook {
   };
 
   if (workInProgressHook === null) {
-		// workInProgressHook === null 证明现在创建的是首个hook节点，就需要把他链接到fiber节点上
+// workInProgressHook === null 证明现在创建的是首个hook节点，就需要把他链接到fiber节点上
 		// currentlyRenderingFiber: 当前的fiber节点
     currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
   } else {
@@ -201,12 +196,19 @@ function Test() {
 
 ### 更新阶段
 
-到了更新阶段，与挂载时对应，hooks所要做的就是从链表中取出对应的节点。
+到了更新阶段，与挂载时对应，hooks方法所要做的就是从链表中取出对应的节点。
 
 ```js
+
 function updateWorkInProgressHook(): Hook {
+	// 这块的逻辑主要是迭代旧树fiber,也即是上次渲染的fiber节点的hooks链表
+	// 如果是第一个hook，则从fiber节点的memoizedState属性，取出hook链表的头节点
+	// 反之则指针后移，迭代链表。
   let nextCurrentHook: null | Hook;
   if (currentHook === null) {
+	  // 如果是第一个hook，即currentHook不存在，
+    // 则在上次渲染的fiber节点中，从它的memoizedState属性，取出hook链表的头节点
+    // alternate, 为fiber节点在旧树中的引用
     const current = currentlyRenderingFiber.alternate;
     if (current !== null) {
       nextCurrentHook = current.memoizedState;
@@ -214,49 +216,68 @@ function updateWorkInProgressHook(): Hook {
       nextCurrentHook = null;
     }
   } else {
+		// 反之，则进行迭代
     nextCurrentHook = currentHook.next;
   }
-
+	
+	// 这块的逻辑主要是迭代新树中fiber节点的hooks链表
+	// 和上面的逻辑唯一不同点在于他是取新树中的fiber节点
   let nextWorkInProgressHook: null | Hook;
   if (workInProgressHook === null) {
     nextWorkInProgressHook = currentlyRenderingFiber.memoizedState;
   } else {
     nextWorkInProgressHook = workInProgressHook.next;
   }
-
-  if (nextWorkInProgressHook !== null) {
-    // There's already a work-in-progress. Reuse it.
+	
+	if (nextWorkInProgressHook !== null) {
+		// 迭代
     workInProgressHook = nextWorkInProgressHook;
     nextWorkInProgressHook = workInProgressHook.next;
-
     currentHook = nextCurrentHook;
   } else {
-    // Clone from the current hook.
+		currentHook = nextCurrentHook;
+		// clone 旧hook节点的属性，创建新的hook节点，
+		const newHook: Hook = {
+			memoizedState: currentHook.memoizedState,
 
-    invariant(
-      nextCurrentHook !== null,
-      'Rendered more hooks than during the previous render.',
-    );
-    currentHook = nextCurrentHook;
+			baseState: currentHook.baseState,
+			baseQueue: currentHook.baseQueue,
+			queue: currentHook.queue,
 
-    const newHook: Hook = {
-      memoizedState: currentHook.memoizedState,
+			next: null,
+		};
 
-      baseState: currentHook.baseState,
-      baseQueue: currentHook.baseQueue,
-      queue: currentHook.queue,
-
-      next: null,
-    };
-
-    if (workInProgressHook === null) {
-      // This is the first hook in the list.
-      currentlyRenderingFiber.memoizedState = workInProgressHook = newHook;
-    } else {
-      // Append to the end of the list.
-      workInProgressHook = workInProgressHook.next = newHook;
-    }
-  }
+		if (workInProgressHook === null) {
+			// workInProgressHook：工作中的hook
+			// 为null，则当前是第一个调用的hook
+			// 把新节点添加到 workInProgressHook ，并连接到fiber节点的memoizedState属性里
+			currentlyRenderingFiber.memoizedState = workInProgressHook = newHook;
+		} else {
+			// 添加到链表尾部
+			workInProgressHook = workInProgressHook.next = newHook;
+		}
+	}
   return workInProgressHook;
 }
 ```
+
+上面的代码可能有些人看起来会有些疑惑，比如：
+
+`currentHook`,`nextCurrentHook`
+
+`workInProgressHook`,`nextWorkInProgressHook`
+
+这两组变量有什么区别？
+
+区别在于前者是旧树中的hook链表，后者是新树中的hook链表。这两组属性分别迭代。这样就可以用旧树的hook的属性，来创建新的节点。
+
+**总的流程：**
+- 迭代旧树hooks链表
+- 迭代新树hooks链表
+- 根据旧树创建新的hook节点
+- 返回这个hook
+
+然后不同的hook方法，就可以进行各自的处理了。
+
+## Hooks方法
+### useState
