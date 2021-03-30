@@ -93,15 +93,14 @@
       }
     ],
     "direction": "horizontal",
-    "width": 304,
-    "collapsed": true
+    "width": 304
   },
   "lastOpenFiles": [
     "文章/hooks 源码浅析.md",
+    "work/报工管理交接.md",
     "React/React-hooks/React-hooks.md",
     "React/React-hooks/useState.md",
     "文章/Untitled.md",
-    "work/报工管理交接.md",
     "React/微信图片_20190718104604.jpg",
     "React/React概念.md",
     "面试题/面试准备.md",

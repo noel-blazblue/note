@@ -87,30 +87,69 @@ instance.componentDidMount()
 事实上，在react内部，这两个阶段调用的是不同的hooks方法。
 
 ```js
-// react-reconciler/src/ReactFiberHooks.js
-// Mount 阶段Hooks的定义
+// 挂载阶段
 const HooksDispatcherOnMount: Dispatcher = {
+  readContext,
+
+  useCallback: mountCallback,
+  useContext: readContext,
   useEffect: mountEffect,
+  useImperativeHandle: mountImperativeHandle,
+  useLayoutEffect: mountLayoutEffect,
+  useMemo: mountMemo,
   useReducer: mountReducer,
+  useRef: mountRef,
   useState: mountState,
- // 其他Hooks
+  useDebugValue: mountDebugValue,
+  useDeferredValue: mountDeferredValue,
+  useTransition: mountTransition,
+  useMutableSource: mountMutableSource,
+  useOpaqueIdentifier: mountOpaqueIdentifier,
+
+  unstable_isNewReconciler: enableNewReconciler,
 };
 
-// Update阶段Hooks的定义
+// 更新阶段
 const HooksDispatcherOnUpdate: Dispatcher = {
+  readContext,
+
+  useCallback: updateCallback,
+  useContext: readContext,
   useEffect: updateEffect,
+  useImperativeHandle: updateImperativeHandle,
+  useLayoutEffect: updateLayoutEffect,
+  useMemo: updateMemo,
   useReducer: updateReducer,
+  useRef: updateRef,
   useState: updateState,
-  // 其他Hooks
+  useDebugValue: updateDebugValue,
+  useDeferredValue: updateDeferredValue,
+  useTransition: updateTransition,
+  useMutableSource: updateMutableSource,
+  useOpaqueIdentifier: updateOpaqueIdentifier,
+
+  unstable_isNewReconciler: enableNewReconciler,
 };
 ```
 
-hooks链表的创建，主要依赖`mountWorkInProgressHook`这个方法，所有的hooks都会统一使用这个方法来创建一个节点，并push到链表的尾部，链表的头部则挂载到当前的fiber节点的`memoizedState`属性中。
+主要是通过下面这个方法来区分，挂载时，`current`参数会传null，更新时，`current`参数会传当前fiber节点。
+
+```js
+function renderWithHooks (current) {
+	ReactCurrentDispatcher.current =
+		current === null || current.memoizedState === null
+			? HooksDispatcherOnMount
+			: HooksDispatcherOnUpdate;
+}
+```
+
+挂载阶段的hooks，需要进行一个挂载逻辑，用`mountWorkInProgressHook`这个方法，来创建一个节点，并link到链表的尾部，链表的头部则赋值到当前的fiber节点的`memoizedState`属性中。
 
 `memoizedState`，顾名思义，是保存一个状态，如 Class组件中的 `this.state` 。而在函数组件中，hooks就是他的状态。
 
 ```js
 function mountWorkInProgressHook(): Hook {
+	// 创建一个hook节点
   const hook: Hook = {
     memoizedState: null,
 
@@ -122,6 +161,7 @@ function mountWorkInProgressHook(): Hook {
   };
 
   if (workInProgressHook === null) {
+		// workInProgressHook === null 证明现在创建的是首个hook节点，就需要把他链接到fiber节点上
 		// currentlyRenderingFiber: 当前的fiber节点
     currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
   } else {
@@ -132,6 +172,8 @@ function mountWorkInProgressHook(): Hook {
   return workInProgressHook;
 }
 ```
+
+节点挂载上后，会返回节点本身，然后不同的hooks方法就可以对这个节点进行不同的处理，比如`useState`会把`initialState`放置到节点的`memoizeState`中。这个等到下文讲api时再具体述说。
 
 例子：
 
@@ -155,10 +197,11 @@ function Test() {
 
 ![[Pasted image 20210327125830.png]]
 
+这样在下一次更新时，直接迭代链表就可以处理每个hook了。
 
 ### 更新阶段
 
-到了更新阶段，与挂载阶段对应，hooks所要做的就是从链表中取出对应的节点。
+到了更新阶段，与挂载时对应，hooks所要做的就是从链表中取出对应的节点。
 
 ```js
 function updateWorkInProgressHook(): Hook {
