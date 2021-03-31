@@ -10,7 +10,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "文章/hooks 源码浅析.md",
+            "file": "work/报工管理交接/报工管理交接.md",
             "mode": "preview"
           }
         }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "文章/hooks 源码浅析.md",
+                "file": "work/报工管理交接/报工管理交接.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -84,7 +84,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "文章/hooks 源码浅析.md"
+                "file": "work/报工管理交接/报工管理交接.md"
               }
             }
           }
@@ -96,15 +96,15 @@
     "width": 304
   },
   "lastOpenFiles": [
-    "文章/hooks 源码浅析.md",
+    "work/报工管理交接/报工管理交接.md",
+    "React/时间分片.md",
+    "React/函数式编程.md",
+    "React/协调.md",
+    "React/fiber.md",
     "work/报工管理交接.md",
+    "文章/hooks 源码浅析.md",
     "React/React-hooks/React-hooks.md",
     "React/React-hooks/useState.md",
-    "文章/Untitled.md",
-    "React/微信图片_20190718104604.jpg",
-    "React/React概念.md",
-    "面试题/面试准备.md",
-    "work/自我介绍.md",
-    "work/Untitled.md"
+    "文章/Untitled.md"
   ]
 }
