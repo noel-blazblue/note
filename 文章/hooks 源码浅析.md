@@ -12,10 +12,14 @@
 - useEffect，useLayoutEffect, useImperativeHandle 的区别
 - useMemo 的执行阶段
 
+
+
 ## 基础架构
 
 ### Fiber 简介
-fiber 是 React 架构中的一个基本工作单元，里面会存放组件的实例、状态、结构关系、副作用。react中的大部分逻辑都依托于这个结构来实现。
+讲 React ，必然离不开 Fiber架构
+
+它是 React 架构中的一个基本工作单元，里面会存放组件的实例、状态、结构关系、副作用。react中的大部分逻辑都依托于这个结构来实现。
 
 ```js
 interface Fiber {
@@ -68,6 +72,8 @@ interface Fiber {
 }
 ```
 
+
+
 对于class组件，stateNode 属性会存放它的实例。这样就能通过实例来访问组件的 jsx、生命周期方法，组件的状态。
 
 伪代码：
@@ -86,11 +92,15 @@ instance.componentDidMount()
 
 这个过程会在hooks的挂载阶段去执行。
 
+
+
 ### 挂载阶段
 
 众所周知，每一次`render`，函数组件都会重新执行一遍。因此里面的hooks方法也会跟着执行。在它第一次执行的时候，我们称之为**挂载阶段**，往后就称之为**更新阶段**。
 
 事实上，在react内部，这两个阶段调用的是不同的hooks方法。
+
+
 
 ```js
 // 挂载阶段
@@ -126,6 +136,8 @@ const HooksDispatcherOnUpdate: Dispatcher = {
 };
 ```
 
+
+
 在`renderWithHooks`中，会判断当前这个阶段所需的是哪些方法。
 
 ```js
@@ -138,9 +150,13 @@ function renderWithHooks (current) {
 }
 ```
 
+
+
 `mount`系列的hooks，会用`mountWorkInProgressHook`这个方法，来创建一个节点，并link到链表的尾部，链表的头部则赋值到当前的fiber节点的`memoizedState`属性中。
 
 `memoizedState`，顾名思义，是保存一个状态，如 Class组件中的 `this.state` 。而在函数组件中，hooks就是他的状态。
+
+
 
 ```js
 function mountWorkInProgressHook(): Hook {
@@ -168,7 +184,9 @@ function mountWorkInProgressHook(): Hook {
 }
 ```
 
-节点挂载上后，会返回节点本身，然后不同的hooks方法就可以对这个节点进行不同的处理，比如`useState`会把`initialState`放置到节点的`memoizeState`中。这个等到下文讲api时再具体述说。
+节点链接上后，会返回节点本身，然后不同的hooks方法就可以对这个节点进行不同的处理，比如`useState`会把`initialState`放置到节点的`memoizeState`中。这个等到下文讲api时再具体述说。
+
+
 
 例子：
 
@@ -193,6 +211,8 @@ function Test() {
 ![[Pasted image 20210327125830.png]]
 
 这样在下一次更新时，直接迭代链表就可以处理每个hook了。
+
+
 
 ### 更新阶段
 
@@ -271,6 +291,8 @@ function updateWorkInProgressHook(): Hook {
 
 区别在于前者是旧树中的hook链表，后者是新树中的hook链表。这两组属性分别迭代。这样就可以用旧树的hook的属性，来创建新的节点。
 
+
+
 **总的流程：**
 - 迭代旧树hooks链表
 - 迭代新树hooks链表
@@ -279,5 +301,53 @@ function updateWorkInProgressHook(): Hook {
 
 然后不同的hook方法，就可以进行各自的处理了。
 
+**要记住，不论是哪个hooks，都要经历这两个阶段，执行挂载和更新逻辑。hook节点是其基础，它们的区别大部分在于对节点上的`memoizedState`和`queue`做不同的赋值。**
+
+
+
 ## Hooks方法
-### useState
+
+### useState&useReducer
+我们先回忆一下基本用法。
+
+- **useState**
+
+```js
+const [state, setState] = useState(initialState);
+```
+
+入参：一个初始值
+
+返回：一个 state，以及更新 state 的函数。
+
+
+
+- **useReducer**
+
+```js
+const [state, dispatch] = useReducer(reducer, initialArg, init);
+```
+
+入参：一个更新state的逻辑，一个初始值，一个初始逻辑
+
+返回：一个state，以及更新 state 的函数。
+
+
+
+尽管后者要比前者看似复杂不少，但二者实际上是同一个方法，`useState`可视为`useReducer`的一个语法糖和简化版，是程序内部帮你初始化了一个`reducer`和`dispatch`。
+
+```js
+function updateState<S>(
+  initialState: (() => S) | S,
+): [S, Dispatch<BasicStateAction<S>>] {
+  return updateReducer(basicStateReducer, (initialState: any));
+}
+
+function basicStateReducer<S>(state: S, action: BasicStateAction<S>): S {
+  // $FlowFixMe: Flow doesn't like mixed types
+  return typeof action === 'function' ? action(state) : action;
+}
+```
+
+
+

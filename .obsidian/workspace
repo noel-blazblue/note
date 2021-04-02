@@ -10,8 +10,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "work/报工管理交接/报工管理交接.md",
-            "mode": "preview"
+            "file": "文章/hooks 源码浅析.md",
+            "mode": "source"
           }
         }
       }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "work/报工管理交接/报工管理交接.md",
+                "file": "文章/hooks 源码浅析.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -84,7 +84,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "work/报工管理交接/报工管理交接.md"
+                "file": "文章/hooks 源码浅析.md"
               }
             }
           }
@@ -96,15 +96,15 @@
     "width": 304
   },
   "lastOpenFiles": [
+    "文章/hooks 源码浅析.md",
+    "React/React-hooks/useState.md",
     "work/报工管理交接/报工管理交接.md",
+    "React/React-hooks/React-hooks.md",
+    "React/React概念.md",
     "React/时间分片.md",
     "React/函数式编程.md",
     "React/协调.md",
     "React/fiber.md",
-    "work/报工管理交接.md",
-    "文章/hooks 源码浅析.md",
-    "React/React-hooks/React-hooks.md",
-    "React/React-hooks/useState.md",
-    "文章/Untitled.md"
+    "work/报工管理交接.md"
   ]
 }
