@@ -1,8 +1,10 @@
 ## 前言
+其实了解react的源码，并不是一件高成本的事，它的内部架构没有大家想象中的那么难，而阅读源码的收获，却是远远大过了成本，能够学习到其中优秀的设计模式和数据架构，并对业务中的熟练度有非常大的提升。因此，这是在前端进阶上非常值得去做的一件事。
 
-本文主要解释 hooks 这部分的源码，让大家在用hooks开发业务中能有一个清晰的认识。对于fiber架构和任务调度，只会略微提及。不过我建议大家最好先了解一下，尽管不懂这部分流程，仍然可以看懂hook。
+**推荐的学习路线：**
+从社区上一些解读文章中了解react的整体架构和运作流程，然后自己再对照源码，对其中的各个环节进行细致的研究和验证。
 
-
+本文主要解释 hooks 这部分的源码，对于fiber架构和任务调度，只会略微提及。不过我建议大家最好先了解一下，尽管不懂这部分流程，仍然可以看懂hook。
 
 社区上的一些优秀文章：
 
@@ -11,7 +13,6 @@
 - setState 的更新流程
 - useEffect，useLayoutEffect, useImperativeHandle 的区别
 - useMemo 的执行阶段
-
 
 
 ## 基础架构
@@ -54,7 +55,8 @@ interface Fiber {
   pendingProps: any,
   // 上一次渲染的props
   memoizedProps: any, 
-  // 上一次渲染的组件状态
+  // 如果是class组件，会保存上一次渲染的state
+  // 如果是hooks组件，会保存所有hooks组成的链表
   memoizedState: any,
 	// 如果是class，setState时会把action enqueue进去。
 	// 如果是hooks，这个地方会存放effect对象
@@ -301,7 +303,19 @@ function updateWorkInProgressHook(): Hook {
 
 然后不同的hook方法，就可以进行各自的处理了。
 
-**要记住，不论是哪个hooks，都要经历这两个阶段，执行挂载和更新逻辑。hook节点是其基础，它们的区别大部分在于对节点上的`memoizedState`和`queue`做不同的赋值。**
+**要记住，不论是哪个hooks，都要经历这两个阶段，执行挂载和更新逻辑。hook节点是其基础，区别在于对节点上的`memoizedState`和`queue`做不同的赋值。**
+
+
+
+### 小总结
+
+1. Hooks是如何保存在组件中的？
+
+   **所有hooks会组成一个链表，挂载到当前fiber节点上，之后的每一次更新，都会根据调用顺序来迭代并取出链表中对应的节点，然后再进行操作。**
+
+2. 为什么不能条件语句/循环语句中使用hook?
+
+   hook需要根据调用顺序来取出链表中的节点，如果少了/多了某个hook调用，就会造成取值错误。
 
 
 
@@ -320,6 +334,12 @@ const [state, setState] = useState(initialState);
 
 返回：一个 state，以及更新 state 的函数。
 
+| 参数         |      |      |
+| ------------ | ---- | ---- |
+| initialState |      |      |
+|              |      |      |
+|              |      |      |
+
 
 
 - **useReducer**
@@ -334,20 +354,53 @@ const [state, dispatch] = useReducer(reducer, initialArg, init);
 
 
 
-尽管后者要比前者看似复杂不少，但二者实际上是同一个方法，`useState`可视为`useReducer`的一个语法糖和简化版，是程序内部帮你初始化了一个`reducer`和`dispatch`。
+尽管后者要比前者看似复杂不少，但二者实际上是同一个方法，`useState`可视为`useReducer`的一个语法糖和简化版，是程序内部帮你赋予了一个`reducer`.
 
 ```js
+// 更新阶段useState实际上调用的方法
 function updateState<S>(
   initialState: (() => S) | S,
 ): [S, Dispatch<BasicStateAction<S>>] {
   return updateReducer(basicStateReducer, (initialState: any));
 }
-
+// 默认的reducer
 function basicStateReducer<S>(state: S, action: BasicStateAction<S>): S {
-  // $FlowFixMe: Flow doesn't like mixed types
+	// 如果你在setState中传入的是一个方法，如setState(state => state + 1)，那么，他会先进行调用再返回。
   return typeof action === 'function' ? action(state) : action;
 }
 ```
 
+所以，这两个方法会合在一起说。
 
+
+
+#### mountState
+
+```js
+// 挂载阶段useState实际上调用的方法
+function mountState<S>(
+  initialState: (() => S) | S,
+): [S, Dispatch<BasicStateAction<S>>] {
+  // 如上文所述，创建一个节点并link到链表中
+  const hook = mountWorkInProgressHook();
+  if (typeof initialState === 'function') {
+    initialState = initialState();
+  }
+  hook.memoizedState = hook.baseState = initialState;
+  const queue = (hook.queue = {
+    pending: null,
+    dispatch: null,
+    lastRenderedReducer: basicStateReducer,
+    lastRenderedState: (initialState: any),
+  });
+  const dispatch: Dispatch<
+    BasicStateAction<S>,
+  > = (queue.dispatch = (dispatchAction.bind(
+    null,
+    currentlyRenderingFiber,
+    queue,
+  ): any));
+  return [hook.memoizedState, dispatch];
+}
+```
 

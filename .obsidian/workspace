@@ -6,11 +6,10 @@
       {
         "id": "f910c47ca023bd08",
         "type": "leaf",
-        "active": true,
         "state": {
           "type": "markdown",
           "state": {
-            "file": "文章/hooks 源码浅析.md",
+            "file": "React/fiber.md",
             "mode": "source"
           }
         }
@@ -69,10 +68,12 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "文章/hooks 源码浅析.md",
+                "file": "React/fiber.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
                 "backlinkCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -84,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "文章/hooks 源码浅析.md"
+                "file": "React/fiber.md"
               }
             }
           }
@@ -95,16 +96,17 @@
     "direction": "horizontal",
     "width": 304
   },
+  "active": "f910c47ca023bd08",
   "lastOpenFiles": [
-    "文章/hooks 源码浅析.md",
-    "React/React-hooks/useState.md",
-    "work/报工管理交接/报工管理交接.md",
-    "React/React-hooks/React-hooks.md",
-    "React/React概念.md",
+    "React/fiber.md",
+    "React/Diff.md",
+    "React/Untitled.md",
+    "React/react-2.md",
+    "React/组件更新流程.md",
+    "React/协调.md",
+    "React/微信图片_20190718104604.jpg",
     "React/时间分片.md",
     "React/函数式编程.md",
-    "React/协调.md",
-    "React/fiber.md",
-    "work/报工管理交接.md"
+    "文章/hooks 源码浅析.md"
   ]
 }

@@ -1,4 +1,7 @@
 ## fiber架构
+`React Fiber`可以理解为：
+
+`React`内部实现的一套状态更新机制。支持任务不同`优先级`，可中断与恢复，并且恢复后可以复用之前的`中间状态`。
 
 ### 模仿函数调用栈
 
@@ -67,57 +70,52 @@ function performUnitOfWork(fiber: Fiber, topWork: Fiber) {
 
 ```js
 interface Fiber {
-  /**
-   * ⚛️ 节点的类型信息
-   */
+  // 1. 类型信息
   // 标记 Fiber 类型, 例如函数组件、类组件、宿主组件
   tag: WorkTag,
   // 节点元素类型, 是具体的类组件、函数组件、宿主组件(字符串)
   type: any,
-
-  /**
-   * ⚛️ 结构信息
-   */ 
+	// 节点实例(状态)：
+  //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
+  //        对于类组件来说，这里保存类组件的实例
+  //        对于函数组件说，这里为空，因为函数组件没有实例
+  stateNode: any,
+	key: key,
+	ref: ref,
+	
+  // 2. 结构信息
   return: Fiber | null,
   child: Fiber | null,
   sibling: Fiber | null,
   // 子节点的唯一键, 即我们渲染列表传入的key属性
   key: null | string,
-	/**
-   * ⚛️ 替身
-   * 指向旧树中的节点
-   */
+	// 指向旧树中的节点
   alternate: Fiber | null,
 
-  /**
-   * ⚛️ 节点的状态
-   */
-  // 节点实例(状态)：
-  //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
-  //        对于类组件来说，这里保存类组件的实例
-  //        对于函数组件说，这里为空，因为函数组件没有实例
-  stateNode: any,
+  // 3. 节点的状态
   // 新的、待处理的props
   pendingProps: any,
   // 上一次渲染的props
-  memoizedProps: any, // The props used to create the output.
-  // 上一次渲染的组件状态
+  memoizedProps: any, 
+  // 如果是class组件，会保存上一次渲染的state
+  // 如果是hooks组件，会保存所有hooks组成的链表
   memoizedState: any,
-	// 更新队列，setState时会把action enqueue进去。
+	// 如果是class，setState时会把action enqueue进去。
 	// 如果是hooks，这个地方会存放effect对象
   updateQueue: UpdateQueue<any> | null, 
 
-  /**
-   * ⚛️ 副作用
-   */
+  // 4. 副作用
   // 当前节点的副作用类型，例如节点更新、删除、移动
   effectTag: SideEffectTag,
   // 和节点关系一样，React 同样使用链表来将所有有副作用的Fiber连接起来
   nextEffect: Fiber | null,
   firstEffect: Fiber | null, // 第一个需要进行 DOM 操作的节点
   lastEffect: Fiber | null, // 最后一个需要进行 DOM 操作的节点，同时也可用于恢复任务
-  
-  
+	
+	// 5. 调度优先级相关
+  this.lanes = NoLanes;
+  this.childLanes = NoLanes;
+
 }
 ```
 
