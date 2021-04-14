@@ -70,20 +70,23 @@ function performUnitOfWork(fiber: Fiber, topWork: Fiber) {
 
 ```js
 interface Fiber {
-  // 1. 类型信息
+  // 1. Instance 类型信息
   // 标记 Fiber 类型, 例如函数组件、类组件、宿主组件
   tag: WorkTag,
   // 节点元素类型, 是具体的类组件、函数组件、宿主组件(字符串)
   type: any,
+	// dom节点，或function,class组件的构造函数。
+	elementType: any,
 	// 节点实例(状态)：
   //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
   //        对于类组件来说，这里保存类组件的实例
   //        对于函数组件说，这里为空，因为函数组件没有实例
   stateNode: any,
 	key: key,
+	
 	ref: ref,
 	
-  // 2. 结构信息
+  // 2. Fiber 结构信息
   return: Fiber | null,
   child: Fiber | null,
   sibling: Fiber | null,
@@ -92,7 +95,7 @@ interface Fiber {
 	// 指向旧树中的节点
   alternate: Fiber | null,
 
-  // 3. 节点的状态
+  // 3. Fiber节点的状态
   // 新的、待处理的props
   pendingProps: any,
   // 上一次渲染的props
@@ -115,6 +118,7 @@ interface Fiber {
 	// 5. 调度优先级相关
   this.lanes = NoLanes;
   this.childLanes = NoLanes;
+	
 
 }
 ```

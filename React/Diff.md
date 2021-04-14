@@ -90,34 +90,210 @@ if (typeof instance.getSnapshotBeforeUpdate === 'function') {
 ##  reconcileChildren
 https://react.jokcy.me/book/flow/reconcile-children/array.html
 
-### 第一轮遍历：复用和当前节点索引一致的老节点
- 
- -   新旧节点都为文本节点，可以直接复用，因为文本节点不需要 key
- -   其他类型节点一律通过判断 key 是否相同来复用或创建节点（可能类型不同但 key 相同）
+### 多节点diff
 
-一旦出现不能复用的情况就跳出遍历.
+#### 第一轮遍历：复用和当前节点索引一致的老节点
+
+ -   新旧节点都为文本节点，可以直接复用，因为文本节点不需要 `key`
+ -   其他类型节点一律通过 `key`来判断，
+      -   `key`相同，`elementType` 相同，则复用老的`fiber`节点
+      -   `key`相同，`elementType`不相同，则新建`fiber`节点，但并不终止循环
+ -   `key`不相同，则跳出循环。
 
 ```js
+// 新的fiber链表中的第一个节点
+let resultingFirstChild: Fiber | null = null;
+// 前一个新的fiber节点
+let previousNewFiber: Fiber | null = null;
+
+let oldFiber = currentFirstChild;
+// 上个未发生移动的节点索引
+let lastPlacedIndex = 0;
+let newIdx = 0;
+let nextOldFiber = null;
 for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
-  // 找到下一个老的子节点
-  nextOldFiber = oldFiber.sibling;
-  // 通过 oldFiber 和 newChildren[newIdx] 判断是否可以复用
-  // 并给复用出来的节点的 return 属性赋值 returnFiber
-  const newFiber = reuse(
+  if (oldFiber.index > newIdx) {
+    nextOldFiber = oldFiber;
+    oldFiber = null;
+  } else {
+    nextOldFiber = oldFiber.sibling;
+  }
+  // 有两种情况，一种key相同，elementType相同，则复用老fiber节点。
+  // 一种key相同，elementType不同，则新建节点。
+  const newFiber = updateSlot(
     returnFiber,
     oldFiber,
-    newChildren[newIdx]
+    newChildren[newIdx],
+    lanes,
   );
-  // 不能复用，跳出
   if (newFiber === null) {
+    // key不同，跳出循环
+    // TODO: This breaks on empty slots like null children. That's
+    // unfortunate because it triggers the slow path all the time. We need
+    // a better way to communicate whether this was a miss or null,
+    // boolean, undefined, etc.
+    if (oldFiber === null) {
+      oldFiber = nextOldFiber;
+    }
     break;
   }
+  if (shouldTrackSideEffects) {
+    if (oldFiber && newFiber.alternate === null) {
+      // We matched the slot, but we didn't reuse the existing fiber, so we
+      // need to delete the existing child.
+      // key相同，elementType不同，不能复用，则删除老fiber节点
+      deleteChild(returnFiber, oldFiber);
+    }
+  }
+  // 如果复用了老fiber节点，则返回其节点的索引
+  lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+  // 将构建好的fiber节点以sibling相互连接起来
+  if (previousNewFiber === null) {
+    // TODO: Move out of the loop. This only happens for the first run.
+    resultingFirstChild = newFiber;
+  } else {
+    // TODO: Defer siblings if we're not at the right index for this slot.
+    // I.e. if we had null values before, then we want to defer this
+    // for each null value. However, we also don't want to call updateSlot
+    // with the previous one.
+    previousNewFiber.sibling = newFiber;
+  }
+  previousNewFiber = newFiber;
+  oldFiber = nextOldFiber;
 }
-
 ```
- 
- ### 第二轮遍历：三种情况
- 
+
+##### updateSlot
+
+- key相同，调用对应的节点type复用函数
+- key不相同，则返回null
+
+```js
+function updateSlot(
+	returnFiber: Fiber,
+	oldFiber: Fiber | null,
+	newChild: any,
+	lanes: Lanes,
+): Fiber | null {
+  // Update the fiber if the keys match, otherwise return null.
+
+  const key = oldFiber !== null ? oldFiber.key : null;
+
+  if (typeof newChild === 'string' || typeof newChild === 'number') {
+    // Text nodes don't have keys. If the previous node is implicitly keyed
+    // we can continue to replace it without aborting even if it is not a text
+    // node.
+    if (key !== null) {
+      return null;
+    }
+    // 文本节点，直接复用或者新建
+    return updateTextNode(returnFiber, oldFiber, '' + newChild, lanes);
+  }
+
+  if (typeof newChild === 'object' && newChild !== null) {
+    switch (newChild.$$typeof) {
+      case REACT_ELEMENT_TYPE: {
+        if (newChild.key === key) {
+          // key相同，复用节点。如果elementType不同，则新建fiber节点。
+          return updateElement(returnFiber, oldFiber, newChild, lanes);
+        } else {
+          // key不同，无法复用
+          return null;
+        }
+      }
+      case REACT_PORTAL_TYPE: {
+        if (newChild.key === key) {
+          return updatePortal(returnFiber, oldFiber, newChild, lanes);
+        } else {
+          return null;
+        }
+      }
+      case REACT_LAZY_TYPE: {
+        if (enableLazyElements) {
+          const payload = newChild._payload;
+          const init = newChild._init;
+          return updateSlot(returnFiber, oldFiber, init(payload), lanes);
+        }
+      }
+    }
+
+    if (isArray(newChild) || getIteratorFn(newChild)) {
+      if (key !== null) {
+        return null;
+      }
+
+      return updateFragment(returnFiber, oldFiber, newChild, lanes, null);
+    }
+  }
+
+  return null;
+}
+```
+
+##### updateElement
+
+- 老节点存在，判断其type是否相同，相同则复用，否则新建
+- 老节点不存在，直接新建
+
+```js
+function updateElement(
+	returnFiber: Fiber,
+	current: Fiber | null,
+  element: ReactElement,
+	lanes: Lanes,
+): Fiber {
+  const elementType = element.type;
+  if (elementType === REACT_FRAGMENT_TYPE) {
+    return updateFragment(
+      returnFiber,
+      current,
+      element.props.children,
+      lanes,
+      element.key,
+    );
+  }
+  if (current !== null) {
+    if (
+      // element节点相同，则复用
+      current.elementType === elementType ||
+      // Keep this check inline so it only runs on the false path:
+      (__DEV__
+       ? isCompatibleFamilyForHotReloading(current, element)
+       : false) ||
+      // Lazy types should reconcile their resolved type.
+      // We need to do this after the Hot Reloading check above,
+      // because hot reloading has different semantics than prod because
+      // it doesn't resuspend. So we can't let the call below suspend.
+      (enableLazyElements &&
+       typeof elementType === 'object' &&
+       elementType !== null &&
+       elementType.$$typeof === REACT_LAZY_TYPE &&
+       resolveLazy(elementType) === current.type)
+    ) {
+      // Move based on index
+      const existing = useFiber(current, element.props);
+      existing.ref = coerceRef(returnFiber, current, element);
+      existing.return = returnFiber;
+      if (__DEV__) {
+        existing._debugSource = element._source;
+        existing._debugOwner = element._owner;
+      }
+      return existing;
+    }
+  }
+  // 否则新建fiber节点
+  // Insert
+  const created = createFiberFromElement(element, returnFiber.mode, lanes);
+  created.ref = coerceRef(returnFiber, current, element);
+  created.return = returnFiber;
+  return created;
+}
+```
+
+
+
+ #### 第二轮遍历：三种情况
+
 第一轮遍历完之后，会出现三种情况
 1. **新节点已遍历完**
 	这个时候删除剩余老节点即可，设置 `effectTag` 为 `Deletion`
@@ -125,88 +301,145 @@ for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 	把剩余的新节点全部创建完毕即可
 3. **新老节点都有剩余**
 	那就进入第三轮遍历
- 
- ### 第三轮遍历：把老节点存入map，通过key来进行复用
- 
- ```js
- // 节点的 key 作为 map 的 key
-// 如果节点不存在 key，那么 index 为 key
-const map = {
-    1: {},
-    2: {}
-}
-```
- 
- 在遍历的过程中会寻找新节点的 key 是否存在于这个 `map` 中，存在即把这个节点移动位置，并给他的 `effectTag` 赋值为 `Placement`。 然后把 `key` 从 `map` 中删掉。
-
-如果不存在，则创建一个新的。
- 
- 此轮遍历结束后，就把还存在于 `map` 中的所有老节点删除。
- 
- 子节点比对: 
 
 ```js
-function diffChildren(fiber: Fiber, newChildren: React.ReactNode) {
-  let oldFiber = fiber.alternate ? fiber.alternate.child : null;
-  // 全新节点，直接挂载
-  if (oldFiber == null) {
-    mountChildFibers(fiber, newChildren)
-    return
+if (newIdx === newChildren.length) {
+  // We've reached the end of the new children. We can delete the rest.
+  // newChildren已遍历完，删除剩余的老的fiber节点
+  deleteRemainingChildren(returnFiber, oldFiber);
+  return resultingFirstChild;
+}
+
+if (oldFiber === null) {
+  // If we don't have any more existing children we can choose a fast path
+  // since the rest will all be insertions.
+  // 老fiber节点已遍历完，新的element节点仍有剩余，则把剩余的全部新建
+  for (; newIdx < newChildren.length; newIdx++) {
+    const newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
+    if (newFiber === null) {
+      continue;
+    }
+    lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+    if (previousNewFiber === null) {
+      // TODO: Move out of the loop. This only happens for the first run.
+      resultingFirstChild = newFiber;
+    } else {
+      previousNewFiber.sibling = newFiber;
+    }
+    previousNewFiber = newFiber;
   }
-
-  let index = 0;
-  let newFiber = null;
-  // 新子节点
-  const elements = extraElements(newChildren)
-
-  // 比对子元素
-  while (index < elements.length || oldFiber != null) {
-    const prevFiber = newFiber;
-    const element = elements[index]
-    const sameType = isSameType(element, oldFiber)
-    if (sameType) {
-      newFiber = cloneFiber(oldFiber, element)
-      // 更新关系
-      newFiber.alternate = oldFiber
-      // 打上Tag
-      newFiber.effectTag = UPDATE
-      newFiber.return = fiber
-    }
-
-    // 新节点
-    if (element && !sameType) {
-      newFiber = createFiber(element)
-      newFiber.effectTag = PLACEMENT
-      newFiber.return = fiber
-    }
-
-    // 删除旧节点
-    if (oldFiber && !sameType) {
-      oldFiber.effectTag = DELETION;
-      oldFiber.nextEffect = fiber.nextEffect
-      fiber.nextEffect = oldFiber
-    }
-
-    if (oldFiber) {
-      oldFiber = oldFiber.sibling;
-    }
-
-    if (index == 0) {
-      fiber.child = newFiber;
-    } else if (prevFiber && element) {
-      prevFiber.sibling = newFiber;
-    }
-
-    index++
-  }
+  return resultingFirstChild;
 }
 ```
+
+
+
+ #### 第三轮遍历：把老节点存入map，通过key来进行复用
+
+1. 把所有剩余的老`fiber`节点存储到`map`中，`key`为`fiber`的`key`或者`index`
+2. 遍历剩余的新`element`节点，如果通过`key`在`map`中找到了老节点，那就复用，并在`map`中删除那个节点。否则新建。
+3.  把`map`中剩余的老`fiber`节点执行删除操作。
+
+ ```js
+// Add all children to a key map for quick lookups.
+// 将剩余的老fiber节点存储到map中，map的key为：如果有key则用key，否则用index。
+const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+
+// Keep scanning and use the map to restore deleted items as moves.
+for (; newIdx < newChildren.length; newIdx++) {
+  const newFiber = updateFromMap(
+    existingChildren,
+    returnFiber,
+    newIdx,
+    newChildren[newIdx]=
+    lanes,
+  );
+  if (newFiber !== null) {
+    if (shouldTrackSideEffects) {
+      if (newFiber.alternate !== null) {
+        // The new fiber is a work in progress, but if there exists a
+        // current, that means that we reused the fiber. We need to delete
+        // it from the child list so that we don't add it to the deletion
+        // list.
+        // 匹配到老fiber节点，则把那个节点从map中删除
+        existingChildren.delete(
+          newFiber.key === null ? newIdx : newFiber.key,
+        );
+      }
+    }
+    lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+    if (previousNewFiber === null) {
+      resultingFirstChild = newFiber;
+    } else {
+      previousNewFiber.sibling = newFiber;
+    }
+    previousNewFiber = newFiber;
+  }
+}
+
+if (shouldTrackSideEffects) {
+  // Any existing children that weren't consumed above were deleted. We need
+  // to add them to the deletion list.
+  // 删除为匹配到的老fiber节点
+  existingChildren.forEach(child => deleteChild(returnFiber, child));
+}
+ ```
+
+ 
+
+
 
 
 
  ![img](https://user-gold-cdn.xitu.io/2019/10/21/16deecce3162b355?imageslim) 
 
  对于需要变更的节点，都打上了'标签'。 在提交阶段，React 就会将这些打上标签的节点应用变更。 
+
+#### 节点的移动
+
+- 如果老`fiber`节点存在
+  - 其`index`小于新的`fiber`	节点，证明这个节点向后移动了，会标记为`Placement`
+  - 其`index`大于等于新的`fiber`节点的索引，就返回其`index`
+- 老`fiber`节点不存在，证明这个节点是新插入的，也标记为`Placement`
+
+```js
+/**
+   * 如果老fiber节点的索引小于新fiber节点的索引，证明老fiber节点发生了移动，会标记为Placement
+   * 如果current不存在，证明是新插入的节点，也会标记为Placement
+   * @param {*} newFiber 
+   * @param {number} lastPlacedIndex 上个未移动节点的索引
+   * @param {number} newIndex 
+   * @returns 
+   */
+function placeChild(
+	newFiber: Fiber,
+	lastPlacedIndex: number,
+	newIndex: number,
+): number {
+  newFiber.index = newIndex;
+  if (!shouldTrackSideEffects) {
+    // Noop.
+    return lastPlacedIndex;
+  }
+  const current = newFiber.alternate;
+  if (current !== null) {
+    const oldIndex = current.index;
+    if (oldIndex < lastPlacedIndex) {
+      // This is a move.
+      // 老fiber节点的索引小于当前复用节点的索引，证明老节点向后移动了。
+      newFiber.flags |= Placement;
+      return lastPlacedIndex;
+    } else {
+      // This item can stay in place.
+      return oldIndex;
+    }
+  } else {
+    // This is an insertion.
+    newFiber.flags |= Placement;
+    return lastPlacedIndex;
+  }
+}
+```
 
 
 
