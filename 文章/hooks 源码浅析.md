@@ -15,7 +15,7 @@
 - useMemo 的执行阶段
 
 
-## 基础架构
+## Fiber 架构
 
 ### Fiber 简介
 讲 React ，必然离不开 Fiber架构
@@ -95,6 +95,13 @@ instance.componentDidMount()
 这个过程会在hooks的挂载阶段去执行。
 
 
+### 双缓冲
+我们在看数字电视的时候，切换下一台往往要经过一个黑屏，然后画面才显示出来。双缓冲就是在切换的时候，先在内存中进行构建UI，完成后直接渲染在界面上。这样就省掉了中间过渡的时间，从而优化体验。
+在`react`中，有两棵`fiber tree`，一个是`current fiber`，一个是`workInProcess fiber`。这两个`fiber`通过`alternate`属性来进行联系。
+`current fiber`是已经渲染在界面上的`fiber`。`fiber`的根节点叫做`rootFiber`，`rootFiber.current` = `current fiber`，它的`current`指向的那个`fiber`，就是当前已经渲染在界面上的`fiber`
+`workInProcess fiber`是由此次更新，而正在内存中构建的`fiber`。构建完成后，`rootFiber.current` = `workInProcess fiber`，就切换为了`current fiber`，从而渲染到界面上。
+由于是在内存中构建，所以它可以随时中断和恢复，不阻塞浏览器渲染。根据优先级而选择先后执行的任务，优先级高的先执行，优先级低的后执行。
+在下文介绍的源码中，有许多是以`current`为前缀，这一般就是`current fiber`，老节点，已经渲染在界面上的。另外则是以`workInProcess`为前缀，一般就是`workInProcess fiber`，新节点，正在内存中构建的。
 
 ### 挂载阶段
 
@@ -307,7 +314,9 @@ function updateWorkInProgressHook(): Hook {
 
 
 
-### 小总结
+### 总结
+
+每个`hooks`对应一个`hook`对象
 
 1. Hooks是如何保存在组件中的？
 

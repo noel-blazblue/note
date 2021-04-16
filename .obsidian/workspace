@@ -9,8 +9,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "React/JSX.md",
-            "mode": "source"
+            "file": "React/状态更新.md",
+            "mode": "preview"
           }
         }
       }
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "React/JSX.md",
+                "file": "React/状态更新.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "React/JSX.md"
+                "file": "React/状态更新.md"
               }
             }
           }
@@ -98,15 +98,15 @@
   },
   "active": "f910c47ca023bd08",
   "lastOpenFiles": [
+    "React/状态更新.md",
+    "React/React-Class/Class声明周期.md",
+    "React/React-Class/setState.md",
     "React/JSX.md",
+    "文章/hooks 源码浅析.md",
+    "数据结构和算法/数组.md",
     "React/Diff.md",
-    "React/fiber.md",
-    "React/React-hooks/useEffect.md",
     "React/组件更新流程.md",
-    "React/协调.md",
-    "React/Untitled.md",
-    "React/react-2.md",
-    "React/微信图片_20190718104604.jpg",
-    "React/时间分片.md"
+    "数据结构和算法/二叉树.md",
+    "数据结构和算法/链表.md"
   ]
 }
