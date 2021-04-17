@@ -148,6 +148,9 @@ function checkShouldComponentUpdate(
 `getSnapshotBeforeUpdate()` 在最近一次渲染输出（提交到 DOM 节点）之前调用。它使得组件能在发生更改之前从 DOM 中捕获一些信息（例如，滚动位置）。此生命周期的任何返回值将作为参数传递给 `componentDidUpdate()`。
 
 ### componentDidUpdate
+
+参数：`(prevProps, prevState, snapshot)`
+
 `componentDidUpdate()` 会在更新后会被立即调用。首次渲染不会执行此方法。
 如果`showComponentUpdate`返回false，则不会调用这个函数
 

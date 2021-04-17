@@ -1,51 +1,45 @@
-useEffect 也是会创建一个hooks对象，并push到`work-in-progress` hooks链表中。
 
-## mountEffect
 
-1. 创建一个hook节点，并push到`work-in-progress` hooks链表中。
-2. 创建一个Effect节点，并push到`componentUpdateQueue`Effect链表中。这个链表会在之后赋值到[[Fiber]]节点的updateQueue属性上。
-3. 把那个Effect节点赋值到Hooks节点的momeizeState属性中。
-	useState中momeizeState属性是存放state值，在useEffect中是存放自己的Effect对象。
-4. 在组件渲染完成之后才会调用updateQueue中的所有方法。
-	
-	![](https://user-gold-cdn.xitu.io/2020/3/3/170a091e5c2e0641?imageslim)
+### effect
 
 ```js
-// react-reconciler/src/ReactFiberHooks.js
-// 简化去掉特殊逻辑
+export type Effect = {|
+  // 标记此effect是否需要执行
+  tag: HookFlags,
+  // 回调函数
+  create: () => (() => void) | void,
+  // 销毁函数
+  destroy: (() => void) | void,
+  // 依赖数组
+  deps: Array<mixed> | null,
+  next: Effect,
+|};
+```
 
-function mountEffect( create,deps,) {
-  return mountEffectImpl(
-    create,
-    deps,
-  );
-}
 
-function mountEffectImpl(fiberEffectTag, hookEffectTag, create, deps) {
-  // 创建一个Hook节点，并把当前节点添加到Hooks链表中
-  const hook = mountWorkInProgressHook();
-  const nextDeps = deps === undefined ? null : deps;
-  // 将当前effect保存到Hook节点的memoizedState属性上，
-  // 以及添加到fiberNode的updateQueue上
-  hook.memoizedState = pushEffect(hookEffectTag, create, undefined, nextDeps);
-}
 
+### pushEffect
+
+创建一个`effect`节点并添加到`fiber`节点的`updateQueue`的`lastEffect`中，如果这个`fiber`	没有`updateQueue`，则帮它创建一个头节点。
+
+```js
 function pushEffect(tag, create, destroy, deps) {
   const effect: Effect = {
     tag,
     create,
     destroy,
     deps,
+    // Circular
     next: (null: any),
   };
-  // componentUpdateQueue 会被挂载到fiberNode的updateQueue上
+  let componentUpdateQueue: null | FunctionComponentUpdateQueue = (currentlyRenderingFiber.updateQueue: any);
   if (componentUpdateQueue === null) {
-    // 如果当前Queue为空，将当前effect作为第一个节点
+    // 首个副作用，创建一个UpdateQueue并把effect节点push进去。
     componentUpdateQueue = createFunctionComponentUpdateQueue();
-   // 保持循环
+    currentlyRenderingFiber.updateQueue = (componentUpdateQueue: any);
     componentUpdateQueue.lastEffect = effect.next = effect;
   } else {
-    // 否则，添加到当前的Queue链表中
+    // 链接到当前fiber节点的updateQueue的lastEffect中
     const lastEffect = componentUpdateQueue.lastEffect;
     if (lastEffect === null) {
       componentUpdateQueue.lastEffect = effect.next = effect;
@@ -56,90 +50,133 @@ function pushEffect(tag, create, destroy, deps) {
       componentUpdateQueue.lastEffect = effect;
     }
   }
-  return effect; 
+  return effect;
 }
-
 ```
 
-## updateEffect
 
-1. 取出当前的hooks节点，并把`nextWorkInProgressHook`指针后移。
-	`nextWorkInProgressHook`专门为了指向下一个要执行的hook，通过这个方式可以遍历hooks链表，来不断的执行。
-2. 从fiber中取出该hook节点的memoizedState，也就是effect对象。然后执行他的`destory`销毁函数，也就是useEffect中返回的方法。
-	每个effect在更新之前，都会执行上一轮effect的销毁方法。然后再执行更新。
-3. 判断他的deps有没有变化，如果没有，就打上NoHookEffect的tag，在提交阶段就不会执行他的更新。
-4. 新创建Effect节点，push到componentUpdateQueue中。
+
+### mountEffect
+
+1. 创建一个hook节点，并push到`work-in-progress` hooks链表中。
+2. 创建一个Effect节点，并`push`到[[Fiber]]节点的`updateQueue`的`lastEffect`上。
+3. 把那个Effect节点赋值到Hooks节点的momeizeState属性中。
 
 ```js
-// react-reconciler/src/ReactFiberHooks.js
-// 简化去掉特殊逻辑
-
-function updateEffect(create,deps){
-  return updateEffectImpl(
+function mountEffect(
+  create: () => (() => void) | void,
+  deps: Array<mixed> | void | null,
+): void {
+  return mountEffectImpl(
+    UpdateEffect | PassiveEffect | PassiveStaticEffect,
+    HookPassive,
     create,
     deps,
   );
 }
 
-function updateEffectImpl(fiberEffectTag, hookEffectTag, create, deps){
-  // 获取当前Hook节点
-  const hook = updateWorkInProgressHook();
-  // 依赖 
+function mountEffectImpl(fiberFlags, hookFlags, create, deps): void {
+  const hook = mountWorkInProgressHook();
   const nextDeps = deps === undefined ? null : deps;
- // 清除函数
+  currentlyRenderingFiber.flags |= fiberFlags;
+  // 创建一个effect对象并添加到memoizedState中
+  hook.memoizedState = pushEffect(
+    HookHasEffect | hookFlags,
+    create,
+    undefined,
+    nextDeps,
+  );
+}
+```
+
+### updateEffect
+
+1. 取出当前的hooks节点，并把`nextWorkInProgressHook`指针后移。
+2. 从上一轮`render`产生的`hook`节点中取出memoizedState，也就是effect对象。判断前后的`deps`是否发生改变
+	
+	- 未改变，则跳过更新`memoizedState`，并`push`这个`effect`到`fiber`节点的`updateQueue`中
+	- 改变，则把这个`effect`更新到`memoizedState`中，并且`tag`标记为`HookHasEffect`，表示需要执行此副作用。
+
+```js
+function updateEffect(
+  create: () => (() => void) | void,
+  deps: Array<mixed> | void | null,
+): void {
+  return updateEffectImpl(
+    UpdateEffect | PassiveEffect,
+    HookPassive,
+    create,
+    deps,
+  );
+}
+
+function updateEffectImpl(fiberFlags, hookFlags, create, deps): void {
+  // 取出hooks节点
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
   let destroy = undefined;
 
   if (currentHook !== null) {
-    // 拿到前一次渲染该Hook节点的effect
+    // 取出上一轮render中的effect
     const prevEffect = currentHook.memoizedState;
     destroy = prevEffect.destroy;
     if (nextDeps !== null) {
       const prevDeps = prevEffect.deps;
-      // 对比deps依赖
       if (areHookInputsEqual(nextDeps, prevDeps)) {
-        // 如果依赖没有变化，就会打上NoHookEffect tag，在commit阶段会跳过此
-        // effect的执行
-        pushEffect(NoHookEffect, create, destroy, nextDeps);
+        // 如果上一轮effect和当前effect的依赖项未发生变化，就无需更新hook的memoizedState
+        // clone一个effect对象链接到updateQueue中，但是tag不添加hasEffect
+        pushEffect(hookFlags, create, destroy, nextDeps);
         return;
       }
     }
   }
-  hook.memoizedState = pushEffect(hookEffectTag, create, destroy, nextDeps);
+
+  currentlyRenderingFiber.flags |= fiberFlags;
+
+  hook.memoizedState = pushEffect(
+    // 标记此effect对象的tag为HookHasEffect，表示有副作用，需要执行。
+    HookHasEffect | hookFlags,
+    create,
+    destroy,
+    nextDeps,
+  );
 }
 ```
 
 
-## commitHookEffectList
+### commitHookEffectList
 - 提交阶段会遍历Fiber节点的updateQueue
 - 如果effect.tag等于NoHookEffect，也就是依赖项没更新的情况下，会跳过执行
 - 卸载阶段，执行销毁函数
 - mount阶段，执行effect的回调，并把返回的卸载方法赋值给effect.destroy属性中。
 
+
+
+调用卸载：
+
 ```js
-function commitHookEffectList(unmountTag,mountTag,finishedWork) {
-  const updateQueue = finishedWork.updateQueue;
-  let lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
+function commitHookEffectListUnmount(flags: HookFlags, finishedWork: Fiber) {
+  const updateQueue: FunctionComponentUpdateQueue | null = (finishedWork.updateQueue: any);
+  const lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
   if (lastEffect !== null) {
     const firstEffect = lastEffect.next;
     let effect = firstEffect;
     do {
-      if ((effect.tag & unmountTag) !== NoHookEffect) {
-        // Unmount 阶段执行tag !== NoHookEffect的effect的清除函数 （如果有的话）
+      if ((effect.tag & flags) === flags) {
+        // Unmount
         const destroy = effect.destroy;
         effect.destroy = undefined;
         if (destroy !== undefined) {
-          destroy();
+          safelyCallDestroy(finishedWork, destroy);
         }
-      }
-      if ((effect.tag & mountTag) !== NoHookEffect) {
-        // Mount 阶段执行所有tag !== NoHookEffect的effect.create，
-        // 我们的清除函数（如果有）会被返回给destroy属性，一遍unmount执行
-        const create = effect.create;
-        effect.destroy = create();
       }
       effect = effect.next;
     } while (effect !== firstEffect);
   }
 }
-
 ```
+
+
+
+调用`create`：
+
