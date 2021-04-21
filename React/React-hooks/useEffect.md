@@ -144,11 +144,10 @@ function updateEffectImpl(fiberFlags, hookFlags, create, deps): void {
 ```
 
 
-### commitHookEffectList
+### 执行Effect
 - 提交阶段会遍历Fiber节点的updateQueue
-- 如果effect.tag等于NoHookEffect，也就是依赖项没更新的情况下，会跳过执行
-- 卸载阶段，执行销毁函数
-- mount阶段，执行effect的回调，并把返回的卸载方法赋值给effect.destroy属性中。
+- 执行销毁函数
+- 执行effect的回调，并把返回的卸载方法赋值给effect.destroy属性中。
 
 
 
@@ -179,4 +178,23 @@ function commitHookEffectListUnmount(flags: HookFlags, finishedWork: Fiber) {
 
 
 调用`create`：
+
+```js
+function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
+  const updateQueue: FunctionComponentUpdateQueue | null = (finishedWork.updateQueue: any);
+  const lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
+  if (lastEffect !== null) {
+    const firstEffect = lastEffect.next;
+    let effect = firstEffect;
+    do {
+      if ((effect.tag & tag) === tag) {
+        // Mount
+        const create = effect.create;
+        effect.destroy = create();
+      }
+      effect = effect.next;
+    } while (effect !== firstEffect);
+  }
+}
+```
 

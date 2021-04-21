@@ -120,7 +120,20 @@ type Update<S, A> = {|
 |};
 ```
 
-
+### Effect
+```js
+export type Effect = {|
+  // 标记此effect是否需要执行
+  tag: HookFlags,
+  // 回调函数
+  create: () => (() => void) | void,
+  // 销毁函数
+  destroy: (() => void) | void,
+  // 依赖数组
+  deps: Array<mixed> | null,
+  next: Effect,
+|};
+```
 
 ## 执行流程
 

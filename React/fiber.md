@@ -73,43 +73,39 @@ interface Fiber {
   // 1. Instance 类型信息
   // 标记 Fiber 类型, 例如函数组件、类组件、宿主组件
   tag: WorkTag,
-  // 节点元素类型, 是具体的类组件、函数组件、宿主组件(字符串)
+  // class、function的构造函数，或者dom组件的标签名。
   type: any,
-	// dom节点，或function,class组件的构造函数。
+	// class、function的构造函数，或者dom组件的标签名。
 	elementType: any,
-	// 节点实例(状态)：
-  //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
-  //        对于类组件来说，这里保存类组件的实例
-  //        对于函数组件说，这里为空，因为函数组件没有实例
+	// DOM节点 | Class实例
+	// 函数组件则为空
   stateNode: any,
-	key: key,
 	
+	key: key,
 	ref: ref,
 	
   // 2. Fiber 结构信息
   return: Fiber | null,
   child: Fiber | null,
   sibling: Fiber | null,
-  // 子节点的唯一键, 即我们渲染列表传入的key属性
-  key: null | string,
 	// 指向旧树中的节点
   alternate: Fiber | null,
 
   // 3. Fiber节点的状态
-  // 新的、待处理的props
+  // 本次更新的props
   pendingProps: any,
   // 上一次渲染的props
   memoizedProps: any, 
   // 如果是class组件，会保存上一次渲染的state
   // 如果是hooks组件，会保存所有hooks组成的链表
   memoizedState: any,
-	// 如果是class，setState时会把action enqueue进去。
-	// 如果是hooks，这个地方会存放effect对象
+	// 如果是class，将保存setState产生的update链表
+	// 如果是hooks，这个地方会存放effect链表
   updateQueue: UpdateQueue<any> | null, 
 
   // 4. 副作用
   // 当前节点的副作用类型，例如节点更新、删除、移动
-  effectTag: SideEffectTag,
+  flags: Flags,
   // 和节点关系一样，React 同样使用链表来将所有有副作用的Fiber连接起来
   nextEffect: Fiber | null,
   firstEffect: Fiber | null, // 第一个需要进行 DOM 操作的节点
@@ -118,19 +114,8 @@ interface Fiber {
 	// 5. 调度优先级相关
   this.lanes = NoLanes;
   this.childLanes = NoLanes;
-	
 
 }
 ```
-
-
-
-Fiber 包含的属性可以划分为 5 个部分:
-
-- **🆕 结构信息** - 这个上文我们已经见过了，Fiber 使用链表的形式来表示节点在树中的定位
-- **节点类型信息** - 这个也容易理解，tag表示节点的分类、type 保存具体的类型值，如div、MyComp
-- **节点的状态** - 节点的组件实例、props、state等，它们将影响组件的输出
-- **🆕 副作用** - 这个也是新东西. 在 Reconciliation 过程中发现的'副作用'(变更需求)就保存在节点的`effectTag` 中(想象为打上一个标记). 那么怎么将本次渲染的所有节点副作用都收集起来呢？ 这里也使用了链表结构，在遍历过程中React会将所有有‘副作用’的节点都通过`nextEffect`连接起来
-- **🆕 替身** - React 在 Reconciliation 过程中会构建一颗新的树(官方称为workInProgress tree，**WIP树**)，可以认为是一颗表示当前工作进度的树。还有一颗表示已渲染界面的**旧树**，React就是一边和旧树比对，一边构建WIP树的。 alternate 指向旧树的同等节点。
 
 

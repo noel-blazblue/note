@@ -17,91 +17,605 @@
 
 ## Fiber 架构
 
-### Fiber 简介
-讲 React ，必然离不开 Fiber架构
-
-它是 React 架构中的一个基本工作单元，里面会存放组件的实例、状态、结构关系、副作用。react中的大部分逻辑都依托于这个结构来实现。
+### 数据结构
+正如同`react`推崇的组件化一样，在源码内部，也是由一个个"组件"去组成整个架构。这个"组件"就是`fiber`，它是 `React` 中的一个基本工作单元，`React`的一切操作都要基于它去实现。
 
 ```js
 interface Fiber {
-  /**
-   * ⚛️ 节点的类型信息
-   */
-  // 标记 Fiber 类型, 例如函数组件、类组件、宿主组件
+  // 1. Instance 类型信息
+  // 标记 Fiber 的实例的类型, 例如函数组件、类组件、宿主组件(即dom)
   tag: WorkTag,
-  // 节点元素类型, 是具体的类组件、函数组件、宿主组件(字符串)
+  // class、function的构造函数，或者dom组件的标签名。
   type: any,
-
-  /**
-   * ⚛️ 结构信息
-   */ 
+	// class、function的构造函数，或者dom组件的标签名。
+	elementType: any,
+	// DOM节点 | Class实例
+	// 函数组件则为空
+  stateNode: any,
+	
+	key: key,
+	ref: ref,
+	
+  // 2. Fiber 结构信息
+  // 指向父fiber 节点
   return: Fiber | null,
+  // 指向子fiber节点
   child: Fiber | null,
+  // 指向兄弟fiber节点
   sibling: Fiber | null,
-  // 子节点的唯一键, 即我们渲染列表传入的key属性
-  key: null | string,
-	// 指向旧树中的节点
+	// 指向上次渲染的fiber节点
   alternate: Fiber | null,
 
-  /**
-   * ⚛️ 节点的状态
-   */
-  // 节点实例(状态)：
-  //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
-  //        对于类组件来说，这里保存类组件的实例
-  //        对于函数组件说，这里为空，因为函数组件没有实例
-  stateNode: any,
-  // 新的、待处理的props
+  // 3. Fiber节点的状态
+  // 本次更新的props
   pendingProps: any,
   // 上一次渲染的props
   memoizedProps: any, 
   // 如果是class组件，会保存上一次渲染的state
   // 如果是hooks组件，会保存所有hooks组成的链表
   memoizedState: any,
-	// 如果是class，setState时会把action enqueue进去。
-	// 如果是hooks，这个地方会存放effect对象
+	// 如果是class，将保存setState产生的update链表
+	// 如果是hooks，这个地方会存放effect链表
+  // 如果是dom节点，会存放他所需更新的props
   updateQueue: UpdateQueue<any> | null, 
 
-  /**
-   * ⚛️ 副作用
-   */
-  // 当前节点的副作用类型，例如节点更新、删除、移动
-  effectTag: SideEffectTag,
-  // 和节点关系一样，React 同样使用链表来将所有有副作用的Fiber连接起来
+  // 4. 副作用
+  // 用二进制来存储的当前节点的所需执行的操作，如节点更新、删除、移动
+  flags: Flags,
+  // 副作用链表，会把所有需要执行副作用的fiber串联起来
   nextEffect: Fiber | null,
-  firstEffect: Fiber | null, // 第一个需要进行 DOM 操作的节点
-  lastEffect: Fiber | null, // 最后一个需要进行 DOM 操作的节点，同时也可用于恢复任务
+  firstEffect: Fiber | null, 
+  lastEffect: Fiber | null, 
+	
+	// 5. 调度优先级相关
+  lanes = NoLanes;
+  childLanes = NoLanes;
+
 }
 ```
 
 
 
-对于class组件，stateNode 属性会存放它的实例。这样就能通过实例来访问组件的 jsx、生命周期方法，组件的状态。
+通俗易懂的说，所有的`element`都是一个独立的`fiber`，`element`的同级元素用`sibling`链接，子元素用`child`链接，这样就由上至下形成了一个`fiber tree`。
 
-伪代码：
+例如：
 
 ```js
-const instance = fiber.stateNode
-const children = instance.render()
-instance.componentDidMount()
+function App() {
+  return (
+    <div className="App">
+      <SubTree />
+    </div>
+  );
+}
+
+function SubTree() {
+  return (
+    <p>
+      subTree
+    </p>
+  )
+}
 ```
 
-但是函数组件是没有实例的，如果在里面写hooks方法，要怎样才能拿到这些数据并加以操作呢？
 
-**答案是通过链表**
 
-每一个hook方法在初次调用时，都会创建一个节点，在其中保存一些状态，并把他们之间互相链接起来，组成一个链表。最终挂载到当前fiber节点上，然后就可以通过fiber上的引用，来获取到hooks。
+![fiberTree](/Users/noel/note/文章/images/fiberTree.png)
 
-这个过程会在hooks的挂载阶段去执行。
+
+
+### 工作流程
+
+`react`的工作流程实际上就是遍历`fiber tree`，对每个`fiber`去执行对应的工作。
+
+```js
+// 异步可中断任务暂时不提
+function workLoopSync() {
+  // workInProgress 是一个全局变量，保存当前所要执行的fiber节点，它会从root节点开始
+  while (workInProgress !== null) {
+    performUnitOfWork(workInProgress);
+  }
+}
+```
+
+
+
+`performUnitOfWork`中会执行当前`fiber`，然后把这个`fiber`的`child`子节点赋值给`workInProgress`，当子节点不存在时，就把`sibling`兄弟节点赋值给`workInProgress` 。
+
+上层的`workLoopSync`函数的`  while`循环会根据下个`workInProgress`去遍历。这样就能实现一个深度优先遍历，从而把所有的`fiber`执行完毕。
+
+
+
+在`performUnitOfWork`里，又分为两个阶段，一个是`beginWork`，一个是`completeWork`。
+
+- `beginWork`
+  - 执行组件`render`
+    - 在`class`组件，会执行实例化，处理`state`，调用挂载前生命周期钩子等等。最后执行`render`，获取返回的`jsx`。
+    - 在`function`组件，会执行组件的构造函数，里面包括了`hooks`的一系列调用，最后获取返回的`jsx`。
+  - 对返回的`jsx`执行`reconcile`,也就是俗称的`diff。`
+    - 根据`diff`生成当前`fiber`的子节点，并标记上对应的`flag`，比如这个节点是更新、删除、移动。
+    - 这个生成的子节点，会返回出去，赋值给`workInProgress`，然后上层函数`workLoopSync`进行下一轮遍历，执行这个新生成的`fiber`节点
+- `completeWork`,当遍历到叶子节点，会执行它，对`fiber tree`进行一个回溯，去迭代`return`也就是父节点。在发现有`sibling`兄弟节点时，会赋值给`workInProgress`，以便上层`workLoopSync`函数遍历。
+  - 生成`dom`节点，并把子孙`dom`节点插入进去。组成一个虚拟`dom`树
+  - 处理`props`
+  - 把所有含有副作用的`fiber`节点用`firstEffect`和`lastEffect`链接起来，组成一个链表，以便在`commit`时去遍历执行。
+
+
+
+在`completeWork`执行到`root`根节点时，证明所有的工作已经完成，就会执行`commitRoot`，把更新提交并渲染到界面上。
+
+
+
+总结上文，在`performUnitOfWork`时，我们称之为协调阶段，主要依靠`beginWork`和`completeWork`去交替执行每个`fiber`，在`commitRoot`时，我们称之为提交阶段。
+
+
 
 
 ### 双缓冲
 我们在看数字电视的时候，切换下一台往往要经过一个黑屏，然后画面才显示出来。双缓冲就是在切换的时候，先在内存中进行构建UI，完成后直接渲染在界面上。这样就省掉了中间过渡的时间，从而优化体验。
+
+
+
 在`react`中，有两棵`fiber tree`，一个是`current fiber`，一个是`workInProcess fiber`。这两个`fiber`通过`alternate`属性来进行联系。
+
 `current fiber`是已经渲染在界面上的`fiber`。`fiber`的根节点叫做`rootFiber`，`rootFiber.current` = `current fiber`，它的`current`指向的那个`fiber`，就是当前已经渲染在界面上的`fiber`
+
 `workInProcess fiber`是由此次更新，而正在内存中构建的`fiber`。构建完成后，`rootFiber.current` = `workInProcess fiber`，就切换为了`current fiber`，从而渲染到界面上。
+
 由于是在内存中构建，所以它可以随时中断和恢复，不阻塞浏览器渲染。根据优先级而选择先后执行的任务，优先级高的先执行，优先级低的后执行。
+
+
+
+联系上文「工作流程」，我们知道`react`的执行是遍历整个`fiber tree`，在遍历中，会根据`current fiber`而去`clone`一个新的`workInPorcess fiber`，这个操作是在`reconcile`中执行，如果是`mount`时，那么没有`current fiber`，会直接创建。
+
+一直向下遍历和`clone`，就会创建出一个新的`fiber tree`，也就是`workInPorcess fiber tree`。然后根据这个新生成的树去提交，渲染到界面上。
+
+
+
 在下文介绍的源码中，有许多是以`current`为前缀，这一般就是`current fiber`，老节点，已经渲染在界面上的。另外则是以`workInProcess`为前缀，一般就是`workInProcess fiber`，新节点，正在内存中构建的。
+
+`current fiber`在下文统称`cur fiber`，`workInProcess fiber`在下文统称`wip fiber`。
+
+
+
+### 总结
+
+1. `react`的组件架构是由一个个`fiber`组成的树组成，他的工作流程就是遍历`fiber tree`去执行每一个工作单元。分为协调阶段，主要负责处理更新和`reconcile`，收集副作用并链接起来。和提交阶段，负责把副作用节点更新到界面上。
+2. `fiber`有新旧两棵树，一个是`current fiber`，是已经渲染在界面上的。一个是`workInPorcess`，由当前的更新触发而在内存中构建的。构建完成，`wip fiber`就会替换`cur fiber`，渲染到界面上。
+
+
+
+## Hooks 架构
+
+### 数据结构
+
+先简单看一下`hooks`所要用到的数据结构，心理有个大概的印象就行。
+
+#### hook
+
+每一个`hook`方法的声明，都会生成一个对应的`hook`对象，来存储一些数据。各自生成的`hook`会以`next`链接在一起，组成一个链表。
+
+```js
+export type Hook = {
+  // 上次渲染后的state
+  memoizedState: any,
+  // 通过已处理好的update，来计算出的state，下文再详述。
+  baseState: any,
+  // 尚需处理的update，通常是上一轮render中遗留下的优先级过低而暂缓执行的update
+  baseQueue: Update<any, any> | null,
+  // 当前触发的update链表
+  queue: UpdateQueue<any, any> | null,
+  // 链接下一个hook
+  next: Hook | null,
+};
+```
+
+例如：
+
+```js
+const [count, setCount] = useState(0);
+const [price, setPrice] = useState(10);
+```
+
+对应的`hook`链表为：
+
+```js
+const hook = {
+  memoizedState: 0,
+  baseState: 0,
+  baseQueue: null,
+  queue: null,
+  next: {
+    memoizedState: 10,
+    baseState: 10,
+    baseQueue: null,
+    queue: null,
+	},
+}
+```
+
+
+
+其中，不同的`hook`方法，其`memoizedState`储存的东西各不相同。
+
+| 方法                      | `memoizedState`  |
+| ------------------------- | ---------------- |
+| useState/useReducer       | state            |
+| useEffect/useLayoutEffect | effect对象       |
+| useMemo/useCallback       | [callback, deps] |
+| useRef                    | {current: any}   |
+
+
+
+#### Update
+
+这一部分只有`useState | useReducer`会用到
+
+```js
+type Update<S, A> = {
+  lane: Lane,
+  action: A,
+  // 触发dispatch时的reducer
+  eagerReducer: ((S, A) => S) | null,
+  // 触发dispatch时计算好的state
+  eagerState: S | null,
+  next: Update<S, A>,
+  priority?: ReactPriorityLevel,
+};
+```
+
+每触发一次`setState`，就会生成一个`update`对象，并链接到`hook`对象的更新队列中，也就是下文的`pending`。
+
+```js
+type UpdateQueue<S, A> = {
+  // 存放当前触发的update
+  pending: Update<S, A> | null,
+  // 存放dispatchAction.bind()的值
+  dispatch: (A => mixed) | null,
+  // 上一次render时的Reducer
+  lastRenderedReducer: ((S, A) => S) | null,
+  // 上一次render时的state
+  lastRenderedState: S | null,
+};
+```
+
+例子：
+
+```js
+const [count, setCount] = useState(0);
+
+setCount(1)
+```
+
+这个`hook`对应为：
+
+```js
+const hook = {
+  memoizedState: 0,
+  baseState: 0,
+  baseQueue: null,
+  queue: {
+    {
+      action: 1,
+    }
+	},
+  next: null,
+}
+```
+
+在`render`	时，会遍历`queue`来执行每个`update`并计算更新。
+
+
+
+#### Effect
+
+这一部分只有`useEffect  | useLayoutEffect | useImperativeHandle`会用到
+
+```js
+export type Effect = {|
+  // 标记此effect是否需要执行
+  tag: HookFlags,
+  // 回调函数
+  create: () => (() => void) | void,
+  // 销毁函数
+  destroy: (() => void) | void,
+  // 依赖数组
+  deps: Array<mixed> | null,
+  next: Effect,
+|};
+```
+
+例如：
+
+```js
+useEffect(() => {
+  console.log('effect')
+}, [])
+```
+
+对应的数据结构：
+
+```js
+const hook = {
+  memoizedState: {
+    create: () => {console.log('effect')},
+    destroy: undefined,
+    deps: [],
+  },
+  baseState: null,
+  baseQueue: null,
+  queue: null,
+  next: null,
+}
+```
+
+
+
+#### dispatcher
+
+事实上，组件`mount`时，与组件`update`时，调用的是不同的`hook`方法，会通过`dispatcher.current`来指向当前所需的方法。
+
+在`render`执行前，会根据`cur fiber`是否存在而决定全局的`dispatcher.current`指向`mount`方法还是`update`方法。
+
+当`FunctionComponent`的`render`执行完毕后，`dispatcher.current`会指向`ContextOnlyDispatcher`，不再允许`hooks`方法的声明。
+
+```js
+// mount时的Dispatcher
+const HooksDispatcherOnMount: Dispatcher = {
+  useCallback: mountCallback,
+  useContext: readContext,
+  useEffect: mountEffect,
+  useImperativeHandle: mountImperativeHandle,
+  useLayoutEffect: mountLayoutEffect,
+  useMemo: mountMemo,
+  useReducer: mountReducer,
+  useRef: mountRef,
+  useState: mountState,
+  // ...省略
+};
+
+// update时的Dispatcher
+const HooksDispatcherOnUpdate: Dispatcher = {
+  useCallback: updateCallback,
+  useContext: readContext,
+  useEffect: updateEffect,
+  useImperativeHandle: updateImperativeHandle,
+  useLayoutEffect: updateLayoutEffect,
+  useMemo: updateMemo,
+  useReducer: updateReducer,
+  useRef: updateRef,
+  useState: updateState,
+  // ...
+};
+
+export const ContextOnlyDispatcher: Dispatcher = {
+  readContext,
+
+  useCallback: throwInvalidHookError,
+  useContext: throwInvalidHookError,
+  useEffect: throwInvalidHookError,
+  useImperativeHandle: throwInvalidHookError,
+  useLayoutEffect: throwInvalidHookError,
+  useMemo: throwInvalidHookError,
+  useReducer: throwInvalidHookError,
+  useRef: throwInvalidHookError,
+  useState: throwInvalidHookError,
+  // ...
+};
+```
+
+
+
+### 执行流程
+
+#### renderWithHooks
+
+调用顺序是`beginWork --> updateFunctionComponent --> renderWithHooks`, 这个函数是`FunctionComponent`的`render`主函数。
+
+它主要做两件事，一个是配置`hooks`所需的全局变量，一个是执行`FunctionComponent`的`render`。
+
+
+
+**简版：**
+
+```js
+export function renderWithHooks<Props, SecondArg>(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  Component: (p: Props, arg: SecondArg) => any,
+  props: Props,
+  secondArg: SecondArg,
+  nextRenderLanes: Lanes,
+): any {
+	// 用这个变量来记录当前所执行的fiber
+  currentlyRenderingFiber = workInProgress;
+  
+  // cur fiber 不存在或者不存在hooks链表都视为未挂载
+  // 更新Dispatcher指向对应的hooks方法
+  ReactCurrentDispatcher.current =
+    current === null || current.memoizedState === null
+    ? HooksDispatcherOnMount
+    : HooksDispatcherOnUpdate;
+  
+  // Component就是组件的构造函数
+  // 执行render，其中就包括了组件里面声明的hooks方法，他们都是在这个地方被执行的。
+  let children = Component(props, secondArg);
+  
+  // 当前fiber已执行结束，重置这些全局变量
+  currentlyRenderingFiber = (null: any);
+  
+  // 返回在render后返回的jsx
+  return children;
+}
+```
+
+**完整版：**
+
+```js
+export function renderWithHooks<Props, SecondArg>(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  Component: (p: Props, arg: SecondArg) => any,
+  props: Props,
+  secondArg: SecondArg,
+  nextRenderLanes: Lanes,
+): any {
+  renderLanes = nextRenderLanes;
+  // 用这个变量来记录当前所执行的fiber
+  currentlyRenderingFiber = workInProgress;
+
+  // 重置wip fiber的状态，然后在后续重新创建。
+  // memoizedState保存了hook链表，这一步先置空，到了render时再从cur fiber中clone每个hook
+  workInProgress.memoizedState = null;
+  workInProgress.updateQueue = null;
+  workInProgress.lanes = NoLanes;
+
+  // cur fiber 不存在或者不存在hooks链表都视为未挂载
+  // 更新Dispatcher指向对应的hooks方法
+  ReactCurrentDispatcher.current =
+    current === null || current.memoizedState === null
+    ? HooksDispatcherOnMount
+    : HooksDispatcherOnUpdate;
+
+  // Component就是组件的构造函数
+  // 执行render，其中就包括了组件里面声明的hooks方法，他们都是在这个地方被执行的。
+  let children = Component(props, secondArg);
+
+  // 如果在render阶段发生了更新，会直接re-render，重新执行。
+  if (didScheduleRenderPhaseUpdateDuringThisPass) {
+    let numberOfReRenders: number = 0;
+    do {
+      didScheduleRenderPhaseUpdateDuringThisPass = false;
+
+      numberOfReRenders += 1;
+
+      currentHook = null;
+      workInProgressHook = null;
+
+      workInProgress.updateQueue = null;
+
+      ReactCurrentDispatcher.current = __DEV__
+        ? HooksDispatcherOnRerenderInDEV
+        : HooksDispatcherOnRerender;
+
+      children = Component(props, secondArg);
+    } while (didScheduleRenderPhaseUpdateDuringThisPass);
+  }
+  
+  // 函数组件的render已结束，关闭hooks调用接口
+  ReactCurrentDispatcher.current = ContextOnlyDispatcher;
+
+  // 当前fiber已执行结束，重置这些全局变量
+  renderLanes = NoLanes;
+  currentlyRenderingFiber = (null: any);
+
+  currentHook = null;
+  workInProgressHook = null;
+
+  didScheduleRenderPhaseUpdate = false;
+
+  // 返回在render后返回的jsx
+  return children;
+}
+```
+
+
+
+注意看这个地方
+
+```js
+workInProgress.memoizedState = null;
+```
+
+上文说过`fiber`的`memoizedState`中保存着`hooks`链表，在`render`之前，会先把这个引用置空，然后在`render`中，会根据`cur fiber`的`memoizedState`来`clone`出来一个个`hook`，这个在下文`updateWorkInProgress`中会详述。
+
+这个过程跟`wip fiber tree`的创建是一样的，也是要根据`cur fiber tree`来一个个`clone`，生成新的节点。
+
+
+
+再看这个地方
+
+```js
+if (didScheduleRenderPhaseUpdateDuringThisPass) {
+  do {
+  // ...
+  } while (didScheduleRenderPhaseUpdateDuringThisPass);
+}
+```
+
+这个遍历，是在`render`阶段发生了更新，然后就会`re-render`，重新执行。一直到不产生新的更新为止。
+
+如这个例子：
+
+```js
+const [count, setCount] = useState(0);
+
+if (count === 0) {
+	setCount(1)
+}
+```
+
+另外，使用`useMemo`来做这个操作的话，也是同样的效果，因为它的回调函数也同样是在`render`阶段执行的。
+
+```js
+const [count, setCount] = useState(0);
+
+useMemo(() => {
+	if (count === 0) {
+		setCount(1)
+	}
+}, [count])
+```
+
+
+
+**流程图：**
+
+![renderWithHooks](/Users/noel/note/文章/images/renderWithHooks.png)
+
+
+
+```js
+let children = Component(props, secondArg);
+```
+
+`hooks`的调用都集中在这个步骤，也就是`render`,接下来详细讲一下。
+
+
+
+#### mountWorkInProgressHook
+
+每个`hook`方法都要根据当前组件是在`mount`还是在`update`，来决定它是要创建一个`hook`节点，还是取出在`mount`时创建好的`hook`节点。
+
+`mount`时，会调用`mountWorkInProgressHook`这个方法，来创建一个`hook`节点并与其他`hook`链接在一起，然后挂载到`wip fiber`的`memoizedState`属性中，以便下次在`update`时可以从中取出链表。
+
+```js
+function mountWorkInProgressHook(): Hook {
+  // 创建一个空的hook节点
+  const hook: Hook = {
+    memoizedState: null,
+
+    baseState: null,
+    baseQueue: null,
+    queue: null,
+
+    next: null,
+  };
+
+  // workInProgressHook 是一个全局变量，保存当前执行的最后一个hook节点。
+  if (workInProgressHook === null) {
+    // 挂载到wip fiber的memoizedState中
+    currentlyRenderingFiber.memoizedState = workInProgressHook = hook;
+  } else {
+    workInProgressHook = workInProgressHook.next = hook;
+  }
+  return workInProgressHook;
+}
+```
+
+每执行一次，`workInProgressHook`的指针就会后移，始终指向链表中最后一个节点。
+
+
 
 ### 挂载阶段
 
