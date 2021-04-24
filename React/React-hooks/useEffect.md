@@ -145,13 +145,60 @@ function updateEffectImpl(fiberFlags, hookFlags, create, deps): void {
 
 
 ### 执行Effect
-- 提交阶段会遍历Fiber节点的updateQueue
-- 执行销毁函数
-- 执行effect的回调，并把返回的卸载方法赋值给effect.destroy属性中。
+
+1.  `before mutation阶段`在`scheduleCallback`中调度`flushPassiveEffects`
+2. `layout`阶段结束后， `scheduleCallback`触发`flushPassiveEffects`，`flushPassiveEffects`调用`commitHookEffectListUnmount`和`commitHookEffectListMount`
 
 
 
-调用卸载：
+#### commitBeforeMutationEffects
+
+在这个阶段，发起`useEffect`的调度。
+
+```js
+function commitBeforeMutationEffects() {
+  while (nextEffect !== null) {
+		// .....
+    if ((flags & Passive) !== NoFlags) {
+      // If there are passive effects, schedule a callback to flush at
+      // the earliest opportunity.
+      if (!rootDoesHavePassiveEffects) {
+        rootDoesHavePassiveEffects = true;
+        scheduleCallback(NormalSchedulerPriority, () => {
+          flushPassiveEffects();
+          return null;
+        });
+      }
+    }
+    nextEffect = nextEffect.nextEffect;
+  }
+}
+```
+
+
+
+#### flushPassiveEffectsImpl
+
+先调用卸载回调，再调用传入的回调。
+
+```js
+function flushPassiveEffectsImpl() {
+  if (rootWithPendingPassiveEffects === null) {
+    return false;
+  }
+
+  commitPassiveUnmountEffects(root.current);
+  commitPassiveMountEffects(root, root.current);
+
+  flushSyncCallbackQueue();
+
+  return true;
+}
+```
+
+
+
+#### commitHookEffectListUnmount
 
 ```js
 function commitHookEffectListUnmount(flags: HookFlags, finishedWork: Fiber) {
@@ -177,7 +224,7 @@ function commitHookEffectListUnmount(flags: HookFlags, finishedWork: Fiber) {
 
 
 
-调用`create`：
+#### commitHookEffectListMount
 
 ```js
 function commitHookEffectListMount(tag: number, finishedWork: Fiber) {
