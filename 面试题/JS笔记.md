@@ -1,4 +1,4 @@
-## OM
+h'y## OM
 
 ### 事件模型
 
@@ -65,40 +65,6 @@ dtd  文档类型声明/定义
 
 不支持冒泡的事件：scroll,blur,mouseleave
 
-
-
-## 模块化
-
-模块化优点：
-
-- 解决命名冲突
-- 提供复用性
-- 提高代码可维护性
-
-
-
-### AMD 和 CMD
-
-
-
-### CommonJS
-
-```
-// a.js
-module.exports = {
-    a: 1
-}
-// or 
-exports.a = 1
-
-// b.js
-var module = require('./a.js')
-module.a // -> log 1
-```
-
-
-
-### ES Module
 
 
 
@@ -438,15 +404,17 @@ function isObjArr(value){
 
 - 1.遍历添加到一个新的数组
 
-```
-function unique(arr) {
-  var newArr = []
-  arr.forEach(item => {
-    if(newArr.indexOf(item) < 0){
-      newArr.push(item)
+```js
+function uniq(arr = []) {
+  let set = new Set()
+  let res = []
+  for (let i = 0; i < arr.length; i++) {
+    if (!set.has(arr[i])) {
+      set.add(arr[i])
+      res.push(arr)
     }
-  });
-  return newArr
+  }
+  return res
 }
 ```
 
@@ -454,7 +422,7 @@ function unique(arr) {
 
 - 2.set结构去重
 
-```
+```js
 let unique= [...new Set(array)];
 //es6 Set数据结构类似于数组，成员值是唯一的，有重复的值会自动去重。
 //Set内部使用===来判断是否相等，类似'1'和1会两个都保存，NaN和NaN只会保存一个
@@ -464,7 +432,7 @@ let unique= [...new Set(array)];
 
 - 3、遍历，将数组的值添加到一个对象的属性名里 
 
-```
+```js
 function unique(arr){
   var obj = {}
   arr.forEach(item => {

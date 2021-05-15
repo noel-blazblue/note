@@ -301,6 +301,8 @@ store.subscribe(listener);
 
 作用是将所有中间件组成一个数组，依次执行。
 
+每个中间件都会以科里化的形式传入`getState,dispatch,action`，然后在`applyMiddleware`中遍历执行所有的中间件，每个中间件只执行到`dispatch`，然后把返回的`dispatch`传递给下个中间件，这样就实现了对`dispatch`的封装，再把最后的`dispatch`传递给`store`。
+
 ```javascript
 const store = createStore(
   reducer,
@@ -321,7 +323,7 @@ function applyMiddleware(store, middlewares) {
 
   let dispatch = store.dispatch
   middlewares.forEach(middleware =>
-    dispatch = middleware(store)(dispatch)
+    dispatch = middleware(getState)(dispatch)
   )
 
   return Object.assign({}, store, { dispatch })
@@ -337,7 +339,7 @@ function applyMiddleware(store, middlewares) {
 
 简易实现：
 
-```
+```js
 /**
  * 让你可以发起一个函数来替代 action。
  * 这个函数接收 `dispatch` 和 `getState` 作为参数。

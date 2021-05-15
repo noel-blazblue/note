@@ -23,5 +23,5 @@ Math.ceil(num * Math.random())
 
 ### 生成\[n,m\]的随机整数
 ```js
-return parseInt(Math.random()\*(maxNum-minNum+1)+minNum,10);
+return parseInt(Math.random() * (maxNum - minNum + 1) + minNum, 10);
 ```
