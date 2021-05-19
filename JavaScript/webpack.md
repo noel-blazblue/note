@@ -10,7 +10,7 @@ entry / output / module / plugins
 
 完整版：
 
-```
+```js
 var HTMLTemp = require('html-webpack-plugin')
 
 module.exports = {

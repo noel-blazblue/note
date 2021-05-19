@@ -9,8 +9,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "打包构建/code splitting.md",
-            "mode": "source"
+            "file": "浏览器/进程与线程.md",
+            "mode": "preview"
           }
         }
       }
@@ -39,7 +39,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "instanceof",
+                "query": "移动端布局",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "打包构建/code splitting.md",
+                "file": "浏览器/进程与线程.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "打包构建/code splitting.md"
+                "file": "浏览器/进程与线程.md"
               }
             }
           }
@@ -98,15 +98,15 @@
   },
   "active": "f910c47ca023bd08",
   "lastOpenFiles": [
-    "打包构建/Untitled.md",
-    "打包构建/webpack.md",
-    "打包构建/yarn.md",
-    "JavaScript/模块化/Untitled.md",
-    "JavaScript/模块化/ES Module.md",
-    "JavaScript/模块化/模块化.md",
-    "JavaScript/模块化.md",
-    "Css/position.md",
-    "Css/Untitled.md",
-    "Css/Untitled 1.md"
+    "浏览器/进程与线程.md",
+    "浏览器/本地储存.md",
+    "软件工程/Untitled.md",
+    "软件工程/设计模式.md",
+    "React/React概念.md",
+    "JavaScript/数据结构/Array.md",
+    "JavaScript/异步任务/Promise.md",
+    "JavaScript/异步任务/Generator.md",
+    "JavaScript/ajax.md",
+    "JavaScript/function.md"
   ]
 }
