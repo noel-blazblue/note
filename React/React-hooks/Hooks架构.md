@@ -6,7 +6,7 @@
 
 当`FunctionComponent`的`render`执行完毕后，会全局指向`ContextOnlyDispatcher`，也就不再允许`hooks`方法的声明。
 
-```js
+```ts
 // mount时的Dispatcher
 const HooksDispatcherOnMount: Dispatcher = {
   useCallback: mountCallback,
@@ -61,7 +61,7 @@ export const ContextOnlyDispatcher: Dispatcher = {
 
 ### Hook
 
-```js
+```ts
 export type Hook = {|
   // 最新的state
   memoizedState: any,
@@ -92,7 +92,7 @@ export type Hook = {|
 
 ### Update
 
-```js
+```ts
 type UpdateQueue<S, A> = {|
   // 存放当前触发的update
   pending: Update<S, A> | null,
@@ -107,7 +107,7 @@ type UpdateQueue<S, A> = {|
 
 
 
-```js
+```ts
 type Update<S, A> = {|
   lane: Lane,
   action: A,
@@ -121,7 +121,7 @@ type Update<S, A> = {|
 ```
 
 ### Effect
-```js
+```ts
 export type Effect = {|
   // 标记此effect是否需要执行
   tag: HookFlags,

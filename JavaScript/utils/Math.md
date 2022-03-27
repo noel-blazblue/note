@@ -26,7 +26,12 @@ Math.**round**(Math.random()\*10);  //基本均衡获取0到10的随机**整数
 Math.ceil(num * Math.random())
 ```
 
-### 生成\[n,m\]的随机整数
+### 生成[n,m]的随机整数
+- 取差值 x ： `n - m`
+- 生成差值内的随机数 c ：`x * Math.random()`
+- 随机数再加上最小值：`c + m`
+
+
 ```js
 return parseInt(Math.random() * (maxNum - minNum + 1) + minNum, 10);
 ```

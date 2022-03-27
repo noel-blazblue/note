@@ -4,13 +4,13 @@
     "type": "split",
     "children": [
       {
-        "id": "f910c47ca023bd08",
+        "id": "62db2a67d7beaced",
         "type": "leaf",
         "state": {
           "type": "markdown",
           "state": {
-            "file": "浏览器/进程与线程.md",
-            "mode": "preview"
+            "file": "服务端/储存结构.md",
+            "mode": "source"
           }
         }
       }
@@ -39,7 +39,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "移动端布局",
+                "query": "订阅",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "浏览器/进程与线程.md",
+                "file": "服务端/储存结构.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "浏览器/进程与线程.md"
+                "file": "服务端/储存结构.md"
               }
             }
           }
@@ -96,17 +96,17 @@
     "direction": "horizontal",
     "width": 304
   },
-  "active": "f910c47ca023bd08",
+  "active": "62db2a67d7beaced",
   "lastOpenFiles": [
-    "浏览器/进程与线程.md",
-    "浏览器/本地储存.md",
-    "软件工程/Untitled.md",
+    "服务端/未命名.md",
+    "README.md",
+    "软件工程/未命名.md",
     "软件工程/设计模式.md",
-    "React/React概念.md",
-    "JavaScript/数据结构/Array.md",
-    "JavaScript/异步任务/Promise.md",
-    "JavaScript/异步任务/Generator.md",
-    "JavaScript/ajax.md",
-    "JavaScript/function.md"
+    "React/react面试题.md",
+    "React/React-hooks/useState.md",
+    "React/协调/updateClassComponent.md",
+    "React/协调/performWork.md",
+    "React/协调/Diff.md",
+    "React/协调/beginWork.md"
   ]
 }
